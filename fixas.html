@@ -32,10 +32,12 @@
       <div class="card">
         <h3 style="margin:0 0 10px;">Adicionar fixa</h3>
         <div class="actions">
-          <input id="name" placeholder="Descrição (ex: Luz)"/>
-          <input id="value" type="number" step="0.01" placeholder="Valor (R$)"/>
-          <input id="due" type="number" min="1" max="31" placeholder="Venc. (dia)"/>
-          <button class="primary" id="add">Adicionar</button>
+          <input id="descFixa" type="text" placeholder="Descrição (ex: Luz)">
+          <input id="valorFixa" type="number" step="0.01" placeholder="Valor (R$)">
+          <input id="dueDay" type="number" placeholder="Venc. (dia)" min="1" max="31">
+          <small id="dueDayError" class="field-error"></small>
+
+          <button id="addFixedBtn" class="btn-primary">Adicionar</button>
         </div>
         <div class="helper">Dica: se uma conta não existe em um mês, é só adicionar naquele mês.</div>
       </div>

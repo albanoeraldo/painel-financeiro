@@ -1,6 +1,15 @@
 import { initHeader, getSelectedMonth } from "./ui.js";
 import { loadState, saveState, ensureMonth, uid, formatBRL, ymToLabel } from "./storage.js";
 
+const monthSelect = document.getElementById("monthSelect");
+const dueDayInput = document.getElementById("dueDay");
+const dueDayError = document.getElementById("dueDayError");
+const addFixedBtn  = document.getElementById("addFixedBtn");
+
+monthSelect.addEventListener("change", validateDueDay);
+dueDayInput.addEventListener("input", validateDueDay);
+validateDueDay(); // já inicia desativado se estiver vazio
+
 initHeader("fixas");
 
 const ym = getSelectedMonth();
@@ -35,13 +44,13 @@ function render(){
     });
   });
 
-  tbody.querySelectorAll(".del").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const id = btn.dataset.id;
-      month.fixed = month.fixed.filter(x=> x.id !== id);
-      saveState(state);
-      render();
-    });
+    tbody.querySelectorAll(".del").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const id = btn.dataset.id;
+        month.fixed = month.fixed.filter(x=> x.id !== id);
+        saveState(state);
+        render();
+      });
   });
 }
 
@@ -63,3 +72,42 @@ document.querySelector("#add").addEventListener("click", ()=>{
 });
 
 render();
+
+function daysInMonth(year, month1to12){
+  return new Date(year, month1to12, 0).getDate();
+}
+
+// Se seu select usa value tipo "2025-12"
+function parseMonthSelect(value){
+  const [y, m] = value.split("-").map(Number);
+  return { year: y, month: m };
+}
+
+function validateDueDay(){
+  const {year, month} = parseMonthSelect(monthSelect.value);
+  const maxDay = daysInMonth(year, month);
+
+  dueDayInput.max = String(maxDay);
+
+  const day = Number(dueDayInput.value);
+
+  if (!day) {
+    dueDayError.textContent = "";
+    dueDayInput.classList.remove("invalid");
+    addFixedBtn.disabled = true;
+    return false;
+  }
+
+  if (day < 1 || day > maxDay){
+    dueDayError.textContent = `Dia inválido para este mês. Use 1 a ${maxDay}.`;
+    dueDayInput.classList.add("invalid");
+    addFixedBtn.disabled = true;
+    return false;
+  }
+
+  dueDayError.textContent = "";
+  dueDayInput.classList.remove("invalid");
+  addFixedBtn.disabled = false;
+  return true;
+}
+
