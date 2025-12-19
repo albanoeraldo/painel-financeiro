@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cartão • Controle Financeiro</title>
+  <link rel="stylesheet" href="assets/css/app.css"/>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1>Cartão / Parcelas</h1>
+        <small>Cadastre compras parceladas e veja quando terminam</small>
+      </div>
+
+      <div class="actions">
+        <select id="monthSelect"></select>
+        <button id="exportCsv" class="blue">Exportar CSV</button>
+        <button id="exportJson">Exportar JSON</button>
+      </div>
+    </header>
+
+    <nav class="nav">
+      <a href="index.html" data-page="dashboard">Dashboard</a>
+      <a href="fixas.html" data-page="fixas">Fixas</a>
+      <a href="cartao.html" data-page="cartao">Cartão</a>
+      <a href="metas.html" data-page="metas">Metas</a>
+    </nav>
+
+    <div class="card">
+      <h3 style="margin:0 0 10px;">Adicionar parcela do mês</h3>
+      <div class="actions">
+        <input id="name" placeholder="Ex: Mercado / Presente / Pneus"/>
+        <input id="monthValue" type="number" step="0.01" placeholder="Parcela do mês (R$)"/>
+        <input id="totalParts" type="number" min="1" placeholder="Qtd parcelas (ex: 8)"/>
+        <input id="startYm" type="month"/>
+        <button class="primary" id="add">Adicionar</button>
+      </div>
+      <div class="helper">
+        Se você não souber o total, pode cadastrar só a “parcela do mês”. O app calcula o mês de término pela quantidade.
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 10px;">Parcelas do mês</h3>
+      <table class="table" id="table">
+        <thead>
+          <tr>
+            <th>Compra</th>
+            <th class="right">Parcela (mês)</th>
+            <th>Início</th>
+            <th>Termina</th>
+            <th>Faltam</th>
+            <th class="right">Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="helper" id="total"></div>
+    </div>
+  </div>
+
+  <script type="module" src="assets/js/cartao.js"></script>
+</body>
+</html>

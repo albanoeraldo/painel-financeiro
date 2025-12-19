@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Controle Financeiro Pessoal</title>
+  <link rel="stylesheet" href="assets/css/app.css"/>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <h1>Controle Financeiro Pessoal</h1>
+        <small>Mensal + resumo anual • simples, leve e prático</small>
+      </div>
+
+      <div class="actions">
+        <select id="monthSelect"></select>
+        <button id="exportCsv" class="blue">Exportar CSV</button>
+        <button id="exportJson">Exportar JSON</button>
+      </div>
+    </header>
+
+    <nav class="nav">
+      <a href="index.html" data-page="dashboard">Dashboard</a>
+      <a href="fixas.html" data-page="fixas">Fixas</a>
+      <a href="cartao.html" data-page="cartao">Cartão</a>
+      <a href="metas.html" data-page="metas">Metas</a>
+    </nav>
+
+    <div class="topbar">
+      <div>
+        <span class="badge">📌 Mês selecionado: <b id="monthLabel"></b></span>
+        <div class="helper">Dica: você pode criar meses novos só cadastrando algo nele.</div>
+      </div>
+    </div>
+
+    <section class="grid" id="kpis"></section>
+
+    <div class="row">
+      <div class="card">
+        <h3 style="margin:0 0 10px;">Resumo do ano (comparação)</h3>
+        <table class="table" id="yearTable">
+          <thead>
+            <tr>
+              <th>Mês</th>
+              <th class="right">Renda</th>
+              <th class="right">Fixas</th>
+              <th class="right">Cartão</th>
+              <th class="right">Metas</th>
+              <th class="right">Saldo</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div class="helper">Exportar CSV cria esse resumo em arquivo pra você guardar.</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="assets/js/dashboard.js"></script>
+</body>
+</html>
