@@ -44,14 +44,14 @@ function render(){
     });
   });
 
-    tbody.querySelectorAll(".del").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        const id = btn.dataset.id;
-        month.fixed = month.fixed.filter(x=> x.id !== id);
-        saveState(state);
-        render();
-      });
+  tbody.querySelectorAll(".del").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const id = btn.dataset.id;
+      month.fixed = month.fixed.filter(x=> x.id !== id);
+      saveState(state);
+      render();
   });
+});
 }
 
 document.querySelector("#add").addEventListener("click", ()=>{
