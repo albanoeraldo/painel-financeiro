@@ -4,7 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Controle Financeiro Pessoal</title>
-  <link rel="stylesheet" href="assets/css/app.css"/>
+  <link rel="stylesheet" href="assets/css/base.css"/>
+  <link rel="stylesheet" href="assets/css/components.css"/>
+  <link rel="stylesheet" href="assets/css/responsive.css"/>
   <link rel="stylesheet" href="assets/css/tema.css"/>
 </head>
 <body>
@@ -90,16 +92,18 @@
         <hr>
 
         <h4 style="margin:0 0 10px;">Distribuição das despesas</h4>
-        <table class="table" id="monthBreakdown">
-          <thead>
-            <tr>
-              <th>Categoria</th>
-              <th class="right">Valor</th>
-              <th class="right">%</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+        <div class="table-wrap">
+          <table class="table" id="monthBreakdown">
+            <thead>
+              <tr>
+                <th>Categoria</th>
+                <th class="right">Valor</th>
+                <th class="right">%</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
 
         <div class="helper">Dica: aqui você enxerga rápido onde está indo a grana do mês selecionado.</div>
       </div>

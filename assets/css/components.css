@@ -1,0 +1,112 @@
+@charset "UTF-8";
+
+/* =========================
+   KPI
+========================= */
+.kpi .label{
+  color:var(--muted);
+  font-size:12px;
+}
+
+.kpi .value{
+  font-size:22px;
+  font-weight:700;
+  margin-top:6px;
+}
+
+/* =========================
+   EMPTY STATE
+========================= */
+.empty{
+  border:1px dashed var(--border);
+  background: rgba(255,255,255,.65);
+  border-radius: var(--radius);
+  padding:16px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-top:12px;
+}
+
+.empty .title{
+  font-weight:700;
+  margin-bottom:4px;
+}
+
+.empty .desc{
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.empty .actions{
+  justify-content:flex-end;
+}
+
+/* =========================
+   VALIDATION
+========================= */
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.field-error{
+  margin-top: 6px;
+  min-height: 14px;
+  font-size:12px;
+  color:#b42318;
+}
+
+input.invalid{
+  border:1px solid #b42318;
+  box-shadow: 0 0 0 3px rgba(180,35,24,.12);
+  outline: none;
+}
+
+/* =========================
+   FIXAS: FORM GRID
+========================= */
+.form-actions{
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto; /* desc | valor | dia | botão */
+  gap: 10px;
+  align-items: start;
+}
+
+.form-actions input{
+  min-width: 0;
+  width: 100%;
+}
+
+.form-actions button{
+  white-space: nowrap;
+  width: 100%;
+}
+
+/* =========================
+   TABLE: PAGO? checkbox
+========================= */
+.table th:nth-child(4),
+.table td:nth-child(4){
+  width: 90px;
+  text-align: center;
+}
+
+.table input[type="checkbox"]{
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--blue);
+}
+
+/* =========================
+   TABLE WRAP (mobile scroll)
+========================= */
+.table-wrap{
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+}
