@@ -5,14 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Controle Financeiro Pessoal</title>
   <link rel="stylesheet" href="assets/css/app.css"/>
+  <link rel="stylesheet" href="assets/css/tema.css"/>
 </head>
 <body>
   <div class="container">
     <header>
-      <img src="assets/img/logo.png" alt="logo">
+      <img class="logo" src="assets/img/logo.png" alt="logo">
       <div class="brand">
         <h1>Controle Financeiro Pessoal</h1>
-        <small>Mensal + resumo anual • simples, leve e prático</small>
+        <small>Mensal com resumo anual • simples, leve e prático</small>
       </div>
 
       <div class="actions">
@@ -28,15 +29,6 @@
       <a href="metas.html" data-page="metas">Metas</a>
       <a href="ano.html" data-page="ano">Ano</a>
     </nav>
-
-    <div class="topbar">
-      <div>
-        <span class="badge">📌 Mês selecionado: <b id="monthLabel"></b></span>
-        <div class="helper">Dica: você pode criar meses novos só cadastrando algo nele.</div>
-      </div>
-    </div>
-
-    <section class="grid" id="kpis"></section>
 
     <div class="row">
       <div class="card">
@@ -78,30 +70,14 @@
       <div class="card">
         <h3 style="margin:0 0 10px;">Resumo do mês</h3>
 
-        <div class="grid" style="grid-template-columns: repeat(4, minmax(0,1fr));">
-          <div class="card kpi">
-            <div class="label">Renda base</div>
-            <div class="value" id="sumIncomeBase">R$ 0,00</div>
-          </div>
-
-          <div class="card kpi">
-            <div class="label">Rendas extras</div>
-            <div class="value" id="sumIncomeExtra">R$ 0,00</div>
-          </div>
-
-          <div class="card kpi">
-            <div class="label">Total despesas</div>
-            <div class="value" id="sumExpenses">R$ 0,00</div>
-          </div>
-
-          <div class="card kpi">
-            <div class="label">Saldo do mês</div>
-            <div class="value" id="sumBalance">R$ 0,00</div>
-            <div style="margin-top:10px;">
-              <span class="badge" id="sumBalanceBadge">—</span>
-            </div>
+        <div class="topbar">
+          <div>
+            <span class="badge">📌 Mês selecionado: <b id="monthLabel"></b></span>
+            <div class="helper">Dica: você pode criar meses novos só cadastrando algo nele.</div>
           </div>
         </div>
+
+        <section class="grid" id="kpis"></section>
 
         <hr>
 

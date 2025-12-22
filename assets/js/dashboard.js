@@ -73,36 +73,13 @@ function renderKpis() {
   }).join("");
 }
 
-function renderMonthSummary() {
-  const rendaBase = Number(month.incomeBase || 0);
-  const rendaExtras = (month.incomeExtra || []).reduce((a,b)=> a + Number(b.value || 0), 0);
-  const rendaTotal = rendaBase + rendaExtras;
-
+function renderBreakdown() {
   const totalFixas = (month.fixed || []).reduce((a,b)=> a + Number(b.value || 0), 0);
   const totalCartao = (month.card || []).reduce((a,b)=> a + Number(b.monthValue || 0), 0);
   const totalMetas  = (month.goals || []).reduce((a,b)=> a + Number(b.saved || 0), 0);
 
   const totalDespesas = totalFixas + totalCartao + totalMetas;
-  const saldo = rendaTotal - totalDespesas;
 
-  // cards
-  const elBase = document.getElementById("sumIncomeBase");
-  const elExtra = document.getElementById("sumIncomeExtra");
-  const elExp = document.getElementById("sumExpenses");
-  const elBal = document.getElementById("sumBalance");
-
-  if (elBase) elBase.textContent = formatBRL(rendaBase);
-  if (elExtra) elExtra.textContent = formatBRL(rendaExtras);
-  if (elExp) elExp.textContent = formatBRL(totalDespesas);
-  if (elBal) elBal.textContent = formatBRL(saldo);
-
-  const badge = document.getElementById("sumBalanceBadge");
-  if (badge) {
-    badge.className = `badge ${saldo >= 0 ? "ok" : "bad"}`;
-    badge.textContent = saldo >= 0 ? "✅ Positivo" : "❌ Negativo";
-  }
-
-  // tabela distribuição
   const tbody = document.querySelector("#monthBreakdown tbody");
   if (!tbody) return;
 
@@ -123,6 +100,7 @@ function renderMonthSummary() {
     `;
   }).join("");
 }
+
 
 function renderExtras() {
   if (!extraTbody) return;
@@ -158,7 +136,7 @@ function renderDashboard() {
 
   renderKpis();
   renderExtras();
-  renderMonthSummary(); // ✅ agora atualiza sempre
+  renderBreakdown();
 }
 
 // --- Eventos ---
