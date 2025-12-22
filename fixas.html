@@ -4,11 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Fixas • Controle Financeiro</title>
+
   <link rel="stylesheet" href="assets/css/base.css"/>
   <link rel="stylesheet" href="assets/css/components.css"/>
   <link rel="stylesheet" href="assets/css/responsive.css"/>
   <link rel="stylesheet" href="assets/css/tema.css"/>
 </head>
+
 <body>
   <div class="container">
 
@@ -36,46 +38,41 @@
       <a href="ano.html" data-page="ano">Ano</a>
     </nav>
 
-    <!-- 2 cards lado a lado -->
     <div class="row">
-
       <!-- Card: Adicionar fixa -->
       <div class="card">
         <h3 style="margin:0 0 10px;">Adicionar fixa</h3>
 
-      <div class="form-actions">
-        <div class="field">
-          <input id="descFixa" type="text" placeholder="Descrição (ex: Luz)">
-          <small id="descFixaError" class="field-error"></small>
+        <div class="form-actions">
+          <div class="field">
+            <input id="descFixa" type="text" placeholder="Descrição (ex: Luz)">
+            <small id="descFixaError" class="field-error"></small>
+          </div>
+
+          <div class="field">
+            <input id="valorFixa" type="number" step="0.01" placeholder="Valor">
+            <small id="valorFixaError" class="field-error"></small>
+          </div>
+
+          <div class="field">
+            <input id="dueDay" type="number" placeholder="Venc." min="1" max="31">
+            <small id="dueDayError" class="field-error"></small>
+          </div>
+
+          <button id="addFixedBtn" class="primary">Adicionar</button>
         </div>
 
-        <div class="field">
-          <input id="valorFixa" type="number" step="0.01" placeholder="Valor">
-          <small id="valorFixaError" class="field-error"></small>
-        </div>
-
-        <div class="field">
-          <input id="dueDay" type="number" placeholder="Venc." min="1" max="31">
-          <small id="dueDayError" class="field-error"></small>
-        </div>
-
-        <button id="addFixedBtn" class="primary">Adicionar</button>
+        <div class="helper">Dica: se uma conta não existe em um mês, é só adicionar naquele mês.</div>
       </div>
-
-        <div class="helper">
-          Dica: se uma conta não existe em um mês, é só adicionar naquele mês.
-        </div>
-    </div>
 
       <!-- Card: Resumo -->
       <div class="card">
         <h3 style="margin:0 0 10px;">Resumo</h3>
         <div id="summary" class="badge"></div>
       </div>
-
     </div>
 
-    <!-- Card: Lista -->
+    <!-- Lista -->
     <div class="card">
       <h3 style="margin:0 0 10px;">Lista de fixas</h3>
 
@@ -93,7 +90,7 @@
               <th>Descrição</th>
               <th>Venc.</th>
               <th class="right">Valor</th>
-              <th>Pago?</th>
+              <th style="text-align:center;">Pago?</th>
               <th class="right">Ações</th>
             </tr>
           </thead>
