@@ -101,9 +101,13 @@ function renderBreakdown() {
   }).join("");
 }
 
-
 function renderExtras() {
   if (!extraTbody) return;
+
+  // estado vazio
+  const hasExtras = (month.incomeExtra || []).length > 0;
+  if (incomeEmpty) incomeEmpty.style.display = hasExtras ? "none" : "flex";
+  document.getElementById("incomeExtraTable").style.display = hasExtras ? "table" : "none";
 
   extraTbody.innerHTML = (month.incomeExtra || []).map(item => `
     <tr>
@@ -122,6 +126,14 @@ function renderExtras() {
     });
   });
 }
+
+const incomeEmpty = document.getElementById("incomeEmpty");
+const focusExtraBtn = document.getElementById("focusExtra");
+
+focusExtraBtn?.addEventListener("click", () => {
+  document.getElementById("incomeExtraName")?.focus();
+});
+
 
 function renderDashboard() {
   ym = getSelectedMonth();
@@ -160,7 +172,19 @@ addExtraBtn?.addEventListener("click", () => {
   const name = extraNameInput?.value.trim();
   const value = Number(extraValueInput?.value);
 
-  if (!name || !value) return;
+  if (!name){
+    extraNameInput?.classList.add("invalid");
+    return;
+  } else {
+    extraNameInput?.classList.remove("invalid");
+  }
+
+  if (!value || value <= 0){
+    extraValueInput?.classList.add("invalid");
+    return;
+  } else {
+    extraValueInput?.classList.remove("invalid");
+  }
 
   month.incomeExtra.push({ id: uid(), name, value });
   saveState(state);
@@ -168,7 +192,7 @@ addExtraBtn?.addEventListener("click", () => {
   extraNameInput.value = "";
   extraValueInput.value = "";
 
-  renderDashboard();
+  renderDashboard(); // atualiza sem F5
 });
 
 // Inicial
