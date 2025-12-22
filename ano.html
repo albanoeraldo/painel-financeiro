@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ano • Controle Financeiro</title>
+  <link rel="stylesheet" href="assets/css/app.css"/>
+</head>
+<body>
+  <div class="container">
+    <header>
+    <img src="assets/img/logo.png" alt="logo">
+      <div class="brand">
+        <h1>Resumo do Ano</h1>
+        <small>Gráficos + comparativo mensal</small>
+      </div>
+
+      <div class="actions">
+        <select id="monthSelect"></select>
+        <button id="exportCsv" class="blue">Exportar CSV</button>
+      </div>
+    </header>
+
+    <nav class="nav">
+      <a href="index.html" data-page="dashboard">Dashboard</a>
+      <a href="fixas.html" data-page="fixas">Fixas</a>
+      <a href="cartao.html" data-page="cartao">Cartão</a>
+      <a href="metas.html" data-page="metas">Metas</a>
+      <a href="ano.html" data-page="ano">Ano</a>
+    </nav>
+
+    <div class="row">
+      <div class="card" style="min-width: 320px;">
+        <h3 style="margin:0 0 10px;">Indicadores do ano</h3>
+        <div id="yearKpis" class="grid"></div>
+        <div class="helper">Dica: os gráficos usam todos os meses que você já criou no sistema.</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="card">
+        <h3 style="margin:0 0 10px;">Saldo mensal</h3>
+        <canvas id="chartSaldo" height="120"></canvas>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="card">
+        <h3 style="margin:0 0 10px;">Renda x Despesas</h3>
+        <canvas id="chartBars" height="120"></canvas>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 10px;">Onde você gastou no ano</h3>
+        <canvas id="chartPie" height="120"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 10px;">Tabela do ano</h3>
+      <table class="table" id="yearTable">
+        <thead>
+          <tr>
+            <th>Mês</th>
+            <th class="right">Renda</th>
+            <th class="right">Fixas</th>
+            <th class="right">Cartão</th>
+            <th class="right">Metas</th>
+            <th class="right">Saldo</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="helper">O saldo considera: renda - (fixas + cartão + metas).</div>
+    </div>
+  </div>
+
+  <!-- Chart.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script type="module" src="assets/js/ano.js"></script>
+</body>
+</html>
