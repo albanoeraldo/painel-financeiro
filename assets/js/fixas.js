@@ -119,6 +119,36 @@ dueDayInput.addEventListener("input", validateDueDay);
 descInput.addEventListener("input", validateDueDay);
 valueInput.addEventListener("input", validateDueDay);
 
+const copyPrevBtn = document.getElementById("copyPrevFixed");
+
+function prevMonth(ym){
+  const [y, m] = ym.split("-").map(Number);
+  const d = new Date(y, m - 2, 1); // mês anterior
+  const yy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  return `${yy}-${mm}`;
+}
+
+copyPrevBtn?.addEventListener("click", ()=>{
+  const prev = prevMonth(ym);
+  const prevMonthData = ensureMonth(state, prev);
+
+  if ((month.fixed || []).length > 0) {
+    alert("Este mês já tem fixas. Apague ou ajuste manualmente.");
+    return;
+  }
+
+  month.fixed = (prevMonthData.fixed || []).map(x => ({
+    ...x,
+    id: uid(),
+    paid: false // novo mês começa como não pago
+  }));
+
+  saveState(state);
+  render();
+});
+
+
 addFixedBtn.addEventListener("click", () => {
   // valida dia do mês
   if (!validateDueDay()) return;

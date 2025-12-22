@@ -1,15 +1,31 @@
 import { loadState, saveState, ensureMonth, ymToLabel } from "./storage.js";
 
-export function getSelectedMonth(){
-  const el = document.querySelector("#monthSelect");
-  return el?.value || currentYm();
-}
-
 export function currentYm(){
   const d = new Date();
   const y = d.getFullYear();
   const m = String(d.getMonth()+1).padStart(2,"0");
   return `${y}-${m}`;
+}
+
+/**
+ * ✅ Gera lista de meses (YYYY-MM) em um range de anos
+ * Ajuste startYear/endYear como quiser (ex: 2024–2030)
+ */
+function buildMonthRange({ startYear = 2024, endYear = 2028 } = {}){
+  const list = [];
+  for(let y = startYear; y <= endYear; y++){
+    for(let m = 1; m <= 12; m++){
+      const mm = String(m).padStart(2,"0");
+      list.push(`${y}-${mm}`);
+    }
+  }
+  return list;
+}
+
+export function getSelectedMonth(){
+  const el = document.querySelector("#monthSelect");
+  const saved = localStorage.getItem("albano_financas_last_month");
+  return el?.value || saved || currentYm();
 }
 
 export function initHeader(active){
@@ -23,27 +39,33 @@ export function initHeader(active){
   if(!monthSelect) return;
 
   const state = loadState();
-  const months = Object.keys(state.months);
   const cur = currentYm();
 
-  // se não existir nenhum mês ainda, cria o mês atual
-  if(months.length === 0){
+  // ✅ Se não existir nenhum mês ainda, cria o mês atual
+  if(Object.keys(state.months).length === 0){
     ensureMonth(state, cur);
     saveState(state);
   }
 
-  // preencher select com meses existentes + atual
-  const all = new Set([...Object.keys(loadState().months), cur]);
-  const sorted = Array.from(all).sort(); // ordem crescente
-  monthSelect.innerHTML = sorted.map(ym => `<option value="${ym}">${ymToLabel(ym)}</option>`).join("");
+  // ✅ Agora preenche com um RANGE completo (não só meses existentes)
+  const range = buildMonthRange({ startYear: 2026, endYear: 2030 });
+
+  monthSelect.innerHTML = range
+    .map(ym => `<option value="${ym}">${ymToLabel(ym)}</option>`)
+    .join("");
 
   // manter último selecionado
   const last = localStorage.getItem("albano_financas_last_month") || cur;
-  monthSelect.value = sorted.includes(last) ? last : cur;
+  monthSelect.value = range.includes(last) ? last : cur;
 
+  // ✅ Ao trocar mês: salva + garante mês no state + recarrega
   monthSelect.addEventListener("change", ()=>{
     localStorage.setItem("albano_financas_last_month", monthSelect.value);
-    // recarrega página atual para atualizar dados
+
+    const st = loadState();
+    ensureMonth(st, monthSelect.value);
+    saveState(st);
+
     window.location.reload();
   });
 
@@ -74,14 +96,25 @@ function exportCsv(){
   // CSV simples: mês, renda, fixas, cartao, metas, saldo
   const state = loadState();
   const rows = [["Mes","Renda","Fixas","Cartao","Metas (guardado)","Saldo"]];
+
   Object.keys(state.months).sort().forEach(ym=>{
     const m = state.months[ym];
-    const fixed = sum(m.fixed.map(x=> x.value));
-    const card  = sum(m.card.map(x=> x.monthValue));
-    const goalsSaved = sum(m.goals.map(x=> x.saved));
-    const saldo = (m.income||0) - fixed - card - goalsSaved;
-    rows.push([ym, m.income||0, fixed, card, goalsSaved, saldo]);
+
+    // ✅ renda = base + extras (caso você esteja usando incomeBase/incomeExtra)
+    const rendaBase = Number(m.incomeBase || m.income || 0);
+    const rendaExtras = Array.isArray(m.incomeExtra)
+      ? m.incomeExtra.reduce((a,b)=> a + Number(b.value||0), 0)
+      : 0;
+    const renda = rendaBase + rendaExtras;
+
+    const fixed = sum((m.fixed || []).map(x=> x.value));
+    const card  = sum((m.card || []).map(x=> x.monthValue));
+    const goalsSaved = sum((m.goals || []).map(x=> x.saved));
+    const saldo = renda - fixed - card - goalsSaved;
+
+    rows.push([ym, renda, fixed, card, goalsSaved, saldo]);
   });
+
   const csv = rows.map(r=> r.join(";")).join("\n");
   download("resumo-anual.csv", csv, "text/csv;charset=utf-8");
 }

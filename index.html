@@ -9,6 +9,7 @@
 <body>
   <div class="container">
     <header>
+      <img src="assets/img/logo.png" alt="logo">
       <div class="brand">
         <h1>Controle Financeiro Pessoal</h1>
         <small>Mensal + resumo anual • simples, leve e prático</small>
@@ -17,7 +18,6 @@
       <div class="actions">
         <select id="monthSelect"></select>
         <button id="exportCsv" class="blue">Exportar CSV</button>
-        <button id="exportJson">Exportar JSON</button>
       </div>
     </header>
 
@@ -36,6 +36,43 @@
     </div>
 
     <section class="grid" id="kpis"></section>
+    
+    <div class="row">
+    <div class="card">
+    <h3 style="margin:0 0 10px;">Entradas do mês</h3>
+
+    <div class="actions">
+      <input id="incomeBase" type="number" step="0.01" placeholder="Salário (R$)">
+      <button class="primary" id="saveIncomeBase">Salvar salário</button>
+      <button id="clearSalary" class="btn-danger">Remover salário</button>
+    </div>
+
+    <hr>
+
+    <div class="actions">
+      <input id="incomeExtraName" type="text" placeholder="Entrada extra (ex: renda extra)">
+      <input id="incomeExtraValue" type="number" step="0.01" placeholder="Valor (R$)">
+      <button class="blue" id="addIncomeExtra">Adicionar extra</button>
+    </div>
+
+    <div class="helper">Ex: bônus, comissão, renda extra de formatação etc.</div>
+
+    <hr>
+
+    <table class="table" id="incomeExtraTable">
+      <thead>
+        <tr>
+          <th>Descrição</th>
+          <th class="right">Valor</th>
+          <th class="right">Ações</th>
+        </tr>
+      </thead>
+        <tbody></tbody>
+      </table>
+
+    </div>
+  </div>
+
 
     <div class="row">
       <div class="card">
