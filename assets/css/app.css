@@ -39,6 +39,12 @@ header{
   margin-bottom:16px;
 }
 
+.header-left{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+
 .brand{
   display:flex; 
   flex-direction:column;
@@ -81,6 +87,8 @@ header{
 .nav a.active{ 
   border-color:var(--blue); 
   color:var(--blue); 
+  background: rgba(37,99,235,.10);
+  box-shadow: 0 3px 3px rgba(37,99,235,.12);
 }
 
 .topbar{
@@ -144,9 +152,11 @@ header{
   min-width: 280px; 
 }
 
-input, select, button{
+button, input, select{
   font:inherit;
+  height: 42px;
 }
+
 input, select{
   padding:10px 12px;
   border:1px solid var(--border);
@@ -154,6 +164,7 @@ input, select{
   background:#fff;
   min-width: 180px;
 }
+
 button{
   padding:10px 12px;
   border-radius:12px;
@@ -161,11 +172,13 @@ button{
   background:#fff;
   cursor:pointer;
 }
+
 button.primary{
   background:var(--primary);
   border-color:var(--primary);
   color:#fff;
 }
+
 button.blue{
   background:var(--blue);
   border-color:var(--blue);
@@ -232,7 +245,9 @@ hr{ border:0;
   align-items:center;
 }
 
-.right{ text-align:right; }
+.right{ 
+  text-align:right; 
+}
 
 .field-error{
   display:block;

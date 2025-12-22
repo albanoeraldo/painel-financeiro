@@ -83,6 +83,10 @@ header{
 }
 
 /* KPI mais elegante */
+.kpi{
+  border-left: 4px solid rgba(37,99,235,.35);
+}
+
 .kpi .label{
   font-size: 12px;
   color: var(--muted);
