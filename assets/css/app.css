@@ -1,4 +1,4 @@
-@charset "UT-8";
+@charset "UTF-8";
 
 :root{
   --bg:#F7F8FC;
@@ -36,8 +36,12 @@ header{
 .brand small{ color:var(--muted); }
 
 .nav{
-  display:flex; gap:8px; flex-wrap:wrap;
+  display:flex; 
+  gap:8px; 
+  flex-wrap:wrap;
+  padding: 10px;
 }
+
 .nav a{
   text-decoration:none;
   padding:10px 12px;
@@ -55,6 +59,7 @@ header{
 }
 
 .card{
+  margin-top: 10px;
   background:var(--card);
   border:1px solid var(--border);
   border-radius:var(--radius);
@@ -112,10 +117,13 @@ button.blue{
 
 .table{
   width:100%;
-  border-collapse:collapse;
+  border-collapse:separate;
+  border-spacing:0;
   overflow:hidden;
   border-radius:12px;
+  border:1px solid var(--border);
 }
+
 .table th, .table td{
   padding:10px 10px;
   border-bottom:1px solid var(--border);
@@ -150,12 +158,16 @@ hr{ border:0; border-top:1px solid var(--border); margin:14px 0; }
   font-size:12px;
   color:#b42318;
 }
+
 input.invalid{
   border:1px solid #b42318;
-  outline: none;
   box-shadow: 0 0 0 3px rgba(180,35,24,.15);
+  outline: none;
 }
+
 button:disabled{
   opacity:.6;
   cursor:not-allowed;
+  pointer-events:none;
 }
+
