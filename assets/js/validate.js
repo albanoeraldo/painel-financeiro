@@ -1,6 +1,6 @@
 // assets/js/validate.js
 export function createValidator({ showOn = "submit" } = {}) {
-  let showMsg = showOn === "input"; // se quiser já validar enquanto digita
+  let showMsg = showOn === "input"; // se "input", valida mostrando ao digitar
 
   function setShowMsg(v) {
     showMsg = !!v;
@@ -8,13 +8,21 @@ export function createValidator({ showOn = "submit" } = {}) {
 
   function setErr(input, errEl, msg) {
     if (!input) return;
+
     const hasErr = !!msg;
+
+    // ✅ Se showMsg estiver OFF, não mostra NADA (nem borda vermelha, nem texto)
+    if (!showMsg) {
+      input.classList.remove("invalid");
+      if (errEl) errEl.textContent = "";
+      return;
+    }
 
     // visual do campo
     input.classList.toggle("invalid", hasErr);
 
-    // mensagem (controlada pelo showMsg)
-    if (errEl) errEl.textContent = showMsg ? (msg || "") : "";
+    // mensagem
+    if (errEl) errEl.textContent = msg || "";
   }
 
   function required(input, errEl, msg = "Campo obrigatório") {

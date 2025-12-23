@@ -75,9 +75,13 @@ input.invalid{
 ========================= */
 .form-actions{
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr auto; /* desc | valor | dia | botão */
+  grid-template-columns: 2fr 1.3fr 1fr 1fr auto; /* desc | valor | dia | botão */
   gap: 10px;
   align-items: start;
+}
+
+.form-actions .field{ 
+  min-width:0; 
 }
 
 .form-actions input{
