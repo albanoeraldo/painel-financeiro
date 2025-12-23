@@ -1,40 +1,63 @@
-import { initHeader } from "./ui.js";
+import { initHeader, getSelectedMonth } from "./ui.js";
 import { loadState, formatBRL, ymToLabel } from "./storage.js";
 
 initHeader("ano");
 
 const state = loadState();
-const monthsKeys = Object.keys(state.months || {}).sort();
+const allMonthKeys = Object.keys(state.months || {}).sort();
 
-// Se não tiver mês criado ainda
-if (monthsKeys.length === 0) {
-  const tbody = document.querySelector("#yearTable tbody");
-  tbody.innerHTML = `<tr><td colspan="6">Nenhum mês cadastrado ainda. Cadastre fixas/cartão/metas em algum mês.</td></tr>`;
-}
+// Chart instances (pra não duplicar)
+let chartSaldo = null;
+let chartBars = null;
+let chartPie = null;
 
 function sum(arr){ return (arr || []).reduce((a,b)=> a + Number(b || 0), 0); }
 
+function normalizeMonth(m){
+  // garante estrutura sem quebrar
+  m = m || {};
+  m.fixed = Array.isArray(m.fixed) ? m.fixed : [];
+  m.card  = Array.isArray(m.card) ? m.card : [];
+  m.goals = Array.isArray(m.goals) ? m.goals : [];
+  m.incomeExtra = Array.isArray(m.incomeExtra) ? m.incomeExtra : [];
+  return m;
+}
+
 function rendaMes(m){
-  const base = Number(m.incomeBase || m.income || 0);
-  const extras = Array.isArray(m.incomeExtra)
-    ? m.incomeExtra.reduce((a,b)=> a + Number(b.value || 0), 0)
-    : 0;
+  m = normalizeMonth(m);
+  const base = Number(m.incomeBase ?? m.income ?? 0);
+  const extras = m.incomeExtra.reduce((a,b)=> a + Number(b.value || 0), 0);
   return base + extras;
 }
 
 function fixasMes(m){
-  return sum((m.fixed || []).map(x => x.value));
+  m = normalizeMonth(m);
+  return sum(m.fixed.map(x => x.value));
 }
 
 function cartaoMes(m){
-  return sum((m.card || []).map(x => x.monthValue));
+  m = normalizeMonth(m);
+  return sum(m.card.map(x => x.monthValue));
 }
 
 function metasMes(m){
-  return sum((m.goals || []).map(x => x.saved));
+  m = normalizeMonth(m);
+  return sum(m.goals.map(x => x.saved));
 }
 
-function buildYearData(){
+function getSelectedYear(){
+  // pega o ano a partir do mês selecionado no header
+  const ym = getSelectedMonth(); // "YYYY-MM"
+  return Number(String(ym || "").split("-")[0]) || new Date().getFullYear();
+}
+
+function getYearKeys(year){
+  return allMonthKeys.filter(ym => String(ym).startsWith(`${year}-`));
+}
+
+function buildYearData(year){
+  const keys = getYearKeys(year);
+
   const labels = [];
   const rendaArr = [];
   const fixasArr = [];
@@ -42,8 +65,8 @@ function buildYearData(){
   const metasArr = [];
   const saldoArr = [];
 
-  monthsKeys.forEach(ym => {
-    const m = state.months[ym];
+  keys.forEach(ym => {
+    const m = normalizeMonth(state.months[ym]);
 
     const renda = rendaMes(m);
     const fixas = fixasMes(m);
@@ -59,13 +82,60 @@ function buildYearData(){
     saldoArr.push(saldo);
   });
 
-  return { labels, rendaArr, fixasArr, cartaoArr, metasArr, saldoArr };
+  return { year, keys, labels, rendaArr, fixasArr, cartaoArr, metasArr, saldoArr };
+}
+
+function renderEmptyYear(year){
+  // tabela
+  const tbody = document.querySelector("#yearTable tbody");
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="6">
+        Nenhum mês cadastrado em <b>${year}</b>.
+        Cadastre fixas/cartão/metas em algum mês desse ano.
+      </td>
+    </tr>
+  `;
+
+  // KPIs
+  const kpiEl = document.getElementById("yearKpis");
+  kpiEl.innerHTML = `
+    <div class="card kpi">
+      <div class="label">Ano</div>
+      <div class="value">${year}</div>
+      <div class="helper">Sem dados ainda</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Renda total</div>
+      <div class="value">${formatBRL(0)}</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Despesas (total)</div>
+      <div class="value">${formatBRL(0)}</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Saldo do ano</div>
+      <div class="value">${formatBRL(0)}</div>
+      <div style="margin-top:10px;">
+        <span class="badge">—</span>
+      </div>
+    </div>
+  `;
+
+  // destrói gráficos
+  destroyCharts();
+}
+
+function destroyCharts(){
+  if (chartSaldo) { chartSaldo.destroy(); chartSaldo = null; }
+  if (chartBars)  { chartBars.destroy();  chartBars = null; }
+  if (chartPie)   { chartPie.destroy();   chartPie = null; }
 }
 
 function renderTable(data){
   const tbody = document.querySelector("#yearTable tbody");
 
-  tbody.innerHTML = monthsKeys.map((ym, i) => {
+  tbody.innerHTML = data.keys.map((ym, i) => {
     const renda = data.rendaArr[i];
     const fixas = data.fixasArr[i];
     const cartao = data.cartaoArr[i];
@@ -92,7 +162,19 @@ function renderKpis(data){
   const totalFixas = sum(data.fixasArr);
   const totalCartao = sum(data.cartaoArr);
   const totalMetas = sum(data.metasArr);
-  const saldoAno = totalRenda - totalFixas - totalCartao - totalMetas;
+  const totalDespesas = totalFixas + totalCartao + totalMetas;
+  const saldoAno = totalRenda - totalDespesas;
+
+  // melhor e pior mês
+  const bestIdx = data.saldoArr.length ? data.saldoArr.indexOf(Math.max(...data.saldoArr)) : -1;
+  const worstIdx = data.saldoArr.length ? data.saldoArr.indexOf(Math.min(...data.saldoArr)) : -1;
+
+  const bestLabel = bestIdx >= 0 ? data.labels[bestIdx] : "-";
+  const worstLabel = worstIdx >= 0 ? data.labels[worstIdx] : "-";
+  const bestVal = bestIdx >= 0 ? data.saldoArr[bestIdx] : 0;
+  const worstVal = worstIdx >= 0 ? data.saldoArr[worstIdx] : 0;
+
+  const avgSaldo = data.saldoArr.length ? (sum(data.saldoArr) / data.saldoArr.length) : 0;
 
   // maior gasto do ano (categoria)
   const gastos = [
@@ -104,13 +186,16 @@ function renderKpis(data){
   const el = document.getElementById("yearKpis");
   el.innerHTML = `
     <div class="card kpi">
-      <div class="label">Renda total</div>
+      <div class="label">Renda total (${data.year})</div>
       <div class="value">${formatBRL(totalRenda)}</div>
     </div>
+
     <div class="card kpi">
       <div class="label">Despesas (total)</div>
-      <div class="value">${formatBRL(totalFixas + totalCartao + totalMetas)}</div>
+      <div class="value">${formatBRL(totalDespesas)}</div>
+      <div class="helper">Fixas + Cartão + Metas</div>
     </div>
+
     <div class="card kpi">
       <div class="label">Saldo do ano</div>
       <div class="value">${formatBRL(saldoAno)}</div>
@@ -120,21 +205,44 @@ function renderKpis(data){
         </span>
       </div>
     </div>
+
     <div class="card kpi">
       <div class="label">Maior peso no gasto</div>
       <div class="value">${gastos[0] ? gastos[0].label : "-"}</div>
       <div class="helper">${gastos[0] ? formatBRL(gastos[0].value) : ""}</div>
     </div>
+
+    <div class="card kpi">
+      <div class="label">Melhor mês (saldo)</div>
+      <div class="value">${bestLabel}</div>
+      <div class="helper">${formatBRL(bestVal)}</div>
+    </div>
+
+    <div class="card kpi">
+      <div class="label">Pior mês (saldo)</div>
+      <div class="value">${worstLabel}</div>
+      <div class="helper">${formatBRL(worstVal)}</div>
+    </div>
+
+    <div class="card kpi">
+      <div class="label">Média do saldo</div>
+      <div class="value">${formatBRL(avgSaldo)}</div>
+      <div class="helper">Média mensal</div>
+    </div>
   `;
 }
 
 function renderCharts(data){
+  destroyCharts();
+
   const ctxSaldo = document.getElementById("chartSaldo");
   const ctxBars = document.getElementById("chartBars");
   const ctxPie = document.getElementById("chartPie");
 
+  if (!ctxSaldo || !ctxBars || !ctxPie) return;
+
   // Linha: saldo
-  new Chart(ctxSaldo, {
+  chartSaldo = new Chart(ctxSaldo, {
     type: "line",
     data: {
       labels: data.labels,
@@ -153,7 +261,7 @@ function renderCharts(data){
   // Barras: renda x despesas
   const despesasArr = data.fixasArr.map((_, i) => data.fixasArr[i] + data.cartaoArr[i] + data.metasArr[i]);
 
-  new Chart(ctxBars, {
+  chartBars = new Chart(ctxBars, {
     type: "bar",
     data: {
       labels: data.labels,
@@ -173,7 +281,7 @@ function renderCharts(data){
   const totalCartao = sum(data.cartaoArr);
   const totalMetas = sum(data.metasArr);
 
-  new Chart(ctxPie, {
+  chartPie = new Chart(ctxPie, {
     type: "pie",
     data: {
       labels: ["Fixas", "Cartão", "Metas"],
@@ -188,8 +296,24 @@ function renderCharts(data){
   });
 }
 
-// roda tudo
-const data = buildYearData();
-renderTable(data);
-renderKpis(data);
-renderCharts(data);
+function render(){
+  const year = getSelectedYear();
+  const data = buildYearData(year);
+
+  if (!data.keys.length){
+    renderEmptyYear(year);
+    return;
+  }
+
+  renderTable(data);
+  renderKpis(data);
+  renderCharts(data);
+}
+
+// Se trocar o mês no header, o ano acompanha (vai filtrar por ano automaticamente)
+document.getElementById("monthSelect")?.addEventListener("change", () => {
+  render();
+});
+
+// init
+render();
