@@ -1,6 +1,5 @@
 import { initHeader, getSelectedMonth } from "./ui.js";
 import { loadState, saveState, ensureMonth, uid, formatBRL, ymToLabel } from "./storage.js";
-import { createValidator } from "./validate.js";
 
 initHeader("fixas");
 
@@ -30,42 +29,9 @@ const summary = document.getElementById("summary");
 const emptyBox = document.getElementById("fixedEmpty");
 const tableEl = document.getElementById("table");
 
-const copyPrevFixedBtn = document.getElementById("copyPrevFixed");
-
-// Helpers
-function daysInMonth(year, month1to12) {
-  return new Date(year, month1to12, 0).getDate();
-}
-function parseYM(ymStr) {
-  const [y, m] = ymStr.split("-").map(Number);
-  return { year: y, month: m };
-}
-function num(v) {
-  return Number(v || 0);
-}
-
-// ✅ Validador reutilizável (showMsg controlado)
-const v = createValidator({ showOn: "submit" });
-
-const rules = [
-  () => v.required(descInput, descErr, "Informe a descrição."),
-  () => v.numberMin(valorInput, valorErr, 0.01, "Informe um valor maior que 0."),
-  () => {
-    const { year, month: m } = parseYM(getSelectedMonth());
-    const max = daysInMonth(year, m);
-    if (dueDayInput) dueDayInput.max = String(max);
-    return v.numberRange(dueDayInput, dueErr, 1, max, `Dia inválido. Use 1 a ${max}.`);
-  },
-];
-
-function validateUI() {
-  return v.validateAll(rules, addBtn);
-}
-
-// valida enquanto digita (mas sem mostrar msg até clicar no botão)
-descInput?.addEventListener("input", validateUI);
-valorInput?.addEventListener("input", validateUI);
-dueDayInput?.addEventListener("input", validateUI);
+// ✅ controla quando pode “mostrar erro”
+let triedSubmit = false;
+const touched = { desc:false, valor:false, due:false };
 
 // Troca de mês
 monthSelect?.addEventListener("change", () => {
@@ -74,129 +40,177 @@ monthSelect?.addEventListener("change", () => {
   month.fixed = Array.isArray(month.fixed) ? month.fixed : [];
   saveState(state);
 
-  // reset do “mostrar mensagens”
-  v.setShowMsg(false);
-  validateUI();
+  // reseta flags
+  triedSubmit = false;
+  touched.desc = touched.valor = touched.due = false;
+
+  clearAllErrors();
+  validateAll(false); // não mostra erro
   render();
 });
 
-function render() {
-  const list = month.fixed || [];
+// Helpers
+function daysInMonth(year, month1to12){
+  return new Date(year, month1to12, 0).getDate();
+}
+function parseYM(ymStr){
+  const [y,m] = ymStr.split("-").map(Number);
+  return { year:y, month:m };
+}
+function num(v){ return Number(v || 0); }
 
-  // Estado vazio
-  const hasItems = list.length > 0;
+// ✅ mostra erro só se allowed=true
+function setErr(input, el, msg, allowed){
+  if (!input || !el) return;
+  const show = allowed && !!msg;
+
+  el.textContent = show ? msg : "";
+  input.classList.toggle("invalid", show);
+}
+
+// ✅ limpar tudo no load/mudança de mês
+function clearAllErrors(){
+  if (descErr) descErr.textContent = "";
+  if (valorErr) valorErr.textContent = "";
+  if (dueErr) dueErr.textContent = "";
+  descInput?.classList.remove("invalid");
+  valorInput?.classList.remove("invalid");
+  dueDayInput?.classList.remove("invalid");
+}
+
+function validateDesc(show){
+  const v = (descInput?.value || "").trim();
+  const msg = !v ? "Informe a descrição." : "";
+  setErr(descInput, descErr, msg, show);
+  return !msg;
+}
+
+function validateValor(show){
+  const v = num(valorInput?.value);
+  const msg = (!v || v <= 0) ? "Informe um valor maior que 0." : "";
+  setErr(valorInput, valorErr, msg, show);
+  return !msg;
+}
+
+function validateDueDay(show){
+  const { year, month: m } = parseYM(getSelectedMonth());
+  const max = daysInMonth(year, m);
+  if (dueDayInput) dueDayInput.max = String(max);
+
+  const day = num(dueDayInput?.value);
+  let msg = "";
+
+  if (!day) msg = "Informe o dia do vencimento.";
+  else if (day < 1 || day > max) msg = `Dia inválido. Use 1 a ${max}.`;
+
+  setErr(dueDayInput, dueErr, msg, show);
+  return !msg;
+}
+
+// showErrors = true -> pinta e mostra msg
+// showErrors = false -> só calcula se está ok, sem pintar
+function validateAll(showErrors){
+  const okDesc  = validateDesc(showErrors && (triedSubmit || touched.desc));
+  const okValor = validateValor(showErrors && (triedSubmit || touched.valor));
+  const okDue   = validateDueDay(showErrors && (triedSubmit || touched.due));
+
+  const ok = okDesc && okValor && okDue;
+  if (addBtn) addBtn.disabled = !ok;
+  return ok;
+}
+
+// Eventos: marca touched no blur (quando o usuário “mexeu”)
+descInput?.addEventListener("blur", ()=>{
+  touched.desc = true;
+  validateAll(true);
+});
+valorInput?.addEventListener("blur", ()=>{
+  touched.valor = true;
+  validateAll(true);
+});
+dueDayInput?.addEventListener("blur", ()=>{
+  touched.due = true;
+  validateAll(true);
+});
+
+// Enquanto digita: só recalcula botão (sem pintar agressivo)
+descInput?.addEventListener("input", ()=> validateAll(false));
+valorInput?.addEventListener("input", ()=> validateAll(false));
+dueDayInput?.addEventListener("input", ()=> validateAll(false));
+
+function render(){
+  const hasItems = (month.fixed || []).length > 0;
+
   if (emptyBox) emptyBox.style.display = hasItems ? "none" : "flex";
   if (tableEl) tableEl.style.display = hasItems ? "table" : "none";
 
-  // Tabela
-  if (tbody) {
-    tbody.innerHTML = list
-      .map(
-        (item) => `
-      <tr>
-        <td>${item.name}</td>
-        <td>Dia ${item.dueDay}</td>
-        <td class="right">${formatBRL(item.value)}</td>
-        <td style="text-align:center;">
-          <input type="checkbox" ${item.paid ? "checked" : ""} data-id="${item.id}" class="paid"/>
-        </td>
-        <td class="right">
-          <button data-id="${item.id}" class="del">Excluir</button>
-        </td>
-      </tr>
-    `
-      )
-      .join("");
+  tbody.innerHTML = (month.fixed || []).map(item => `
+    <tr>
+      <td>${item.name}</td>
+      <td>Dia ${item.dueDay}</td>
+      <td class="right">${formatBRL(item.value)}</td>
+      <td style="text-align:center;">
+        <input type="checkbox" ${item.paid ? "checked":""} data-id="${item.id}" class="paid"/>
+      </td>
+      <td class="right">
+        <button data-id="${item.id}" class="del">Excluir</button>
+      </td>
+    </tr>
+  `).join("");
 
-    // eventos: pago
-    tbody.querySelectorAll(".paid").forEach((chk) => {
-      chk.addEventListener("change", () => {
-        const id = chk.dataset.id;
-        const it = month.fixed.find((x) => x.id === id);
-        if (it) {
-          it.paid = chk.checked;
-          saveState(state);
-        }
-      });
-    });
+  const total = (month.fixed || []).reduce((a,b)=> a + Number(b.value||0), 0);
+  if (summary) summary.innerHTML = `📅 ${ymToLabel(ym)} • Total fixas: <b>${formatBRL(total)}</b>`;
 
-    // eventos: excluir
-    tbody.querySelectorAll(".del").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const id = btn.dataset.id;
-        month.fixed = month.fixed.filter((x) => x.id !== id);
+  tbody.querySelectorAll(".paid").forEach(chk=>{
+    chk.addEventListener("change", ()=>{
+      const id = chk.dataset.id;
+      const it = month.fixed.find(x=> x.id === id);
+      if (it){
+        it.paid = chk.checked;
         saveState(state);
-        render();
-        validateUI();
-      });
+      }
     });
-  }
+  });
 
-  // Resumo
-  const total = list.reduce((a, b) => a + Number(b.value || 0), 0);
-  if (summary) {
-    summary.innerHTML = `📅 ${ymToLabel(ym)} • Total fixas: <b>${formatBRL(total)}</b>`;
-  }
+  tbody.querySelectorAll(".del").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const id = btn.dataset.id;
+      month.fixed = month.fixed.filter(x=> x.id !== id);
+      saveState(state);
+      render();
+      validateAll(false);
+    });
+  });
 }
 
 // Adicionar
-addBtn?.addEventListener("click", () => {
-  // agora sim mostra as mensagens e valida “pra valer”
-  v.setShowMsg(true);
-  if (!validateUI()) return;
+addBtn?.addEventListener("click", ()=>{
+  triedSubmit = true;        // ✅ agora sim pode mostrar erros
+  touched.desc = touched.valor = touched.due = true;
+
+  if (!validateAll(true)) return;
 
   const name = (descInput.value || "").trim();
   const value = num(valorInput.value);
   const dueDay = num(dueDayInput.value);
 
-  month.fixed.push({ id: uid(), name, value, dueDay, paid: false });
+  month.fixed.push({ id: uid(), name, value, dueDay, paid:false });
   saveState(state);
 
-  // limpa
   descInput.value = "";
   valorInput.value = "";
   dueDayInput.value = "";
 
-  // volta a esconder msgs até próxima tentativa
-  v.setShowMsg(false);
-  validateUI();
+  // reseta flags pós-sucesso (pra não ficar vermelho de novo vazio)
+  triedSubmit = false;
+  touched.desc = touched.valor = touched.due = false;
+
+  clearAllErrors();
+  validateAll(false);
   render();
 });
 
-// Copiar fixas do mês anterior (se tiver o botão no HTML)
-copyPrevFixedBtn?.addEventListener("click", () => {
-  // pega mês anterior
-  const { year, month: m } = parseYM(ym);
-  const prev = new Date(year, m - 2, 1); // m-1 é o atual, m-2 é o anterior
-  const prevYM = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`;
-
-  const prevMonth = state.months?.[prevYM];
-  const prevFixed = Array.isArray(prevMonth?.fixed) ? prevMonth.fixed : [];
-
-  if (prevFixed.length === 0) return;
-
-  // evita duplicar por name+value+dueDay
-  const exists = new Set((month.fixed || []).map((x) => `${x.name}|${x.value}|${x.dueDay}`));
-
-  prevFixed.forEach((x) => {
-    const key = `${x.name}|${x.value}|${x.dueDay}`;
-    if (!exists.has(key)) {
-      month.fixed.push({
-        id: uid(),
-        name: x.name,
-        value: Number(x.value || 0),
-        dueDay: Number(x.dueDay || 1),
-        paid: false,
-      });
-      exists.add(key);
-    }
-  });
-
-  saveState(state);
-  render();
-});
-
-// Init
-v.setShowMsg(false);
-validateUI();
+// Init (✅ não pinta nada)
+clearAllErrors();
+validateAll(false);
 render();
