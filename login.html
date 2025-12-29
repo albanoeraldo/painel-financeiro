@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login • Controle Financeiro</title>
+  <link rel="stylesheet" href="assets/css/base.css"/>
+  <link rel="stylesheet" href="assets/css/components.css"/>
+  <link rel="stylesheet" href="assets/css/responsive.css"/>
+  <link rel="stylesheet" href="assets/css/tema.css"/>
+</head>
+<body>
+  <div class="container">
+    <div class="card" style="max-width:520px;margin:40px auto;">
+      <h2 style="margin:0 0 10px;">Entrar</h2>
+      <div class="helper" style="margin-bottom:12px;">Use seu e-mail e senha.</div>
+
+      <div class="form-actions" style="grid-template-columns: 1fr;">
+        <div class="field">
+          <input id="email" type="email" placeholder="Email" />
+          <small id="emailError" class="field-error"></small>
+        </div>
+
+        <div class="field">
+          <input id="password" type="password" placeholder="Senha" />
+          <small id="passError" class="field-error"></small>
+        </div>
+
+        <button class="primary" id="loginBtn">Entrar</button>
+        <button id="logoutBtn" class="btn-danger" style="display:none;">Sair</button>
+
+        <div class="helper" id="msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="assets/js/login.js"></script>
+</body>
+</html>

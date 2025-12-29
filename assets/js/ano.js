@@ -3,6 +3,9 @@ import { loadState, formatBRL, ymToLabel } from "./storage.js";
 
 initHeader("ano");
 
+import { requireAuth } from "./ui.js";
+await requireAuth();
+
 const state = loadState();
 const allMonthKeys = Object.keys(state.months || {}).sort();
 

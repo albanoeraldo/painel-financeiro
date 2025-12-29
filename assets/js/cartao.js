@@ -4,6 +4,9 @@ import { createValidator } from "./validate.js";
 
 initHeader("cartao");
 
+import { requireAuth } from "./ui.js";
+await requireAuth();
+
 // --- state + month (let pq muda) ---
 let ym = getSelectedMonth();
 const state = loadState();

@@ -7,6 +7,17 @@ export function currentYm(){
   return `${y}-${m}`;
 }
 
+import { supabase } from "./supabaseClient.js";
+
+export async function requireAuth(){
+  const { data } = await supabase.auth.getSession();
+  if(!data.session){
+    window.location.href = "login.html";
+    return null;
+  }
+  return data.session;
+}
+
 /**
  * ✅ Gera lista de meses (YYYY-MM) em um range de anos
  * Ajuste startYear/endYear como quiser (ex: 2024–2030)

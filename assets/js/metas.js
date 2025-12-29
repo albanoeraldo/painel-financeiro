@@ -4,6 +4,9 @@ import { createValidator } from "./validate.js";
 
 initHeader("metas");
 
+import { requireAuth } from "./ui.js";
+await requireAuth();
+
 // Estado e mês (let pq muda ao trocar mês)
 let ym = getSelectedMonth();
 const state = loadState();

@@ -3,6 +3,9 @@ import { loadState, saveState, ensureMonth, uid, formatBRL, ymToLabel } from "./
 
 initHeader("fixas");
 
+import { requireAuth } from "./ui.js";
+await requireAuth();
+
 // Estado e mês (let pq muda ao trocar mês)
 let ym = getSelectedMonth();
 const state = loadState();
