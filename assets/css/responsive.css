@@ -63,24 +63,79 @@
   }
 }
 
-/* ===== KPIs responsivos (quebrar sem cortar valores) ===== */
-#kpis{
-  display:grid;
-  gap:12px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-#kpis .card{ min-width:0; }
-
-#kpis .kpi .value{
-  white-space: normal;
-  word-break: break-word;
-}
-
 @media (max-width: 700px){
-  #kpis{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nav{
+    position: sticky;
+    top: 10px;
+    z-index: 50;
+
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 16px;
+
+    background: rgba(255,255,255,.95);
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 24px rgba(2,6,23,.08);
+
+    /* vira GRID */
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)); /* 3 colunas */
+    gap: 10px;
+  }
+
+  .nav a{
+    width: 100%;
+    text-align: center;
+    padding: 10px 0;
+
+    /* evita esmagar texto */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* ===== KPIs / Resumo do mês (mobile) ===== */
+  /* garante 2 colunas e cards mais largos */
+  #kpis{
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px;
+  }
+
+  /* se algum wrapper estiver apertando, isso ajuda */
+  #kpis .card{
+    min-width: 0;
+    padding: 14px;
+  }
+
+  #kpis .card:nth-child(5){
+    grid-column: 1 / -1;
+  }
+
+  /* impede "R$" e número quebrarem em várias linhas */
+  #kpis .kpi .value{
+    white-space: nowrap;       /* NÃO quebra linha */
+    word-break: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;   /* se for muito grande, vira ... */
+    font-size: 20px;           /* um pouco menor no mobile */
+  }
+
+  /* textos menores também */
+  #kpis .kpi .label{
+    font-size: 12px;
+  }
 }
 
+/* bem pequeno: 2 colunas */
 @media (max-width: 420px){
-  #kpis{ grid-template-columns: 1fr; }
+  .nav{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #kpis{
+    grid-template-columns: 1fr !important;
+  }
+
+  #kpis .kpi .value{
+    font-size: 22px; /* como fica 1 coluna, pode voltar maior */
+  }
 }
