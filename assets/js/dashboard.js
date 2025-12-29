@@ -15,6 +15,7 @@ function normalizeMonth(m){
   m.incomeExtra = Array.isArray(m.incomeExtra) ? m.incomeExtra : [];
   m.fixed       = Array.isArray(m.fixed) ? m.fixed : [];
   m.card        = Array.isArray(m.card) ? m.card : [];
+  m.cardRecurring = Array.isArray(m.cardRecurring) ? m.cardRecurring : []; // ✅ NEW
   m.goals       = Array.isArray(m.goals) ? m.goals : [];
   return m;
 }
@@ -48,9 +49,21 @@ function clearErr(input, errEl){
   if (errEl) errEl.textContent = "";
 }
 
+// ✅ total das assinaturas ativas do cartão
+function cardRecurringTotal(m){
+  return sum((m.cardRecurring || [])
+    .filter(x => x && x.active !== false)
+    .map(x => x.value));
+}
+
 function calcTotals(m){
   const fixed = sum((m.fixed || []).map(x => x.value));
-  const card  = sum((m.card || []).map(x => x.monthValue));
+
+  // ✅ parcelas + assinaturas
+  const cardParts = sum((m.card || []).map(x => x.monthValue));
+  const cardRec   = cardRecurringTotal(m);
+  const card      = cardParts + cardRec;
+
   const goals = sum((m.goals || []).map(x => x.saved));
 
   const incomeBase = Number(m.incomeBase || 0);
@@ -68,7 +81,7 @@ function renderKpis(){
   const kpis = [
     { label:"Renda do mês", value: formatBRL(income) },
     { label:"Fixas", value: formatBRL(fixed) },
-    { label:"Cartão (parcelas do mês)", value: formatBRL(card) },
+    { label:"Cartão (parcelas + assinaturas)", value: formatBRL(card) }, // ✅ texto
     { label:"Metas (guardado no mês)", value: formatBRL(goals) },
     { label:"Saldo (sobra/falta)", value: formatBRL(saldo), badge: saldo >= 0 ? "ok" : "bad" },
   ];
@@ -113,7 +126,12 @@ function renderMonthSummary(){
   const tbody = document.querySelector("#monthBreakdown tbody");
   if(!tbody) return;
 
-  const { fixed, card, goals, income, saldo } = calcTotals(month);
+  // ✅ pegar as partes separadas (para a tabela ficar clara)
+  const fixed = sum((month.fixed || []).map(x => x.value));
+  const cardParts = sum((month.card || []).map(x => x.monthValue));
+  const cardRec = cardRecurringTotal(month);
+  const card = cardParts + cardRec;
+  const goals = sum((month.goals || []).map(x => x.saved));
   const totalDespesas = fixed + card + goals;
 
   const rows = [
@@ -133,8 +151,8 @@ function renderMonthSummary(){
     `;
   }).join("");
 
-  // Se você tiver algum badge/resumo extra no HTML, dá pra preencher aqui também.
-  // Por enquanto só a tabela já fica certa.
+  // (opcional) se quiser, dá pra mostrar no helper:
+  // parcelas e assinaturas separadas, mas deixei simples.
 }
 
 function renderDashboard(){
@@ -178,7 +196,7 @@ document.getElementById("monthSelect")?.addEventListener("change", ()=>{
 
 // salvar salário
 saveIncomeBaseBtn?.addEventListener("click", ()=>{
-  v.setShowMsg(true); // ✅ agora mostra mensagem
+  v.setShowMsg(true);
   const ok = v.validateAll([ruleSalaryOptional]);
   if(!ok) return;
 
@@ -200,7 +218,7 @@ clearSalaryBtn?.addEventListener("click", ()=>{
 
 // adicionar extra
 addExtraBtn?.addEventListener("click", ()=>{
-  v.setShowMsg(true); // ✅ mostra msgs
+  v.setShowMsg(true);
   const ok = v.validateAll([ruleExtraName, ruleExtraValue]);
   if(!ok) return;
 
@@ -219,7 +237,7 @@ addExtraBtn?.addEventListener("click", ()=>{
   renderDashboard();
 });
 
-// UX: ao mexer depois do submit, pode revalidar (sem te “atacar” no load)
+// UX: ao mexer depois do submit, pode revalidar
 incomeBaseInput?.addEventListener("input", ()=>{ if(incomeBaseInput.classList.contains("invalid")) ruleSalaryOptional(); });
 extraNameInput?.addEventListener("input", ()=>{ if(extraNameInput.classList.contains("invalid")) ruleExtraName(); });
 extraValueInput?.addEventListener("input", ()=>{ if(extraValueInput.classList.contains("invalid")) ruleExtraValue(); });

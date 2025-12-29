@@ -14,10 +14,10 @@ let chartPie = null;
 function sum(arr){ return (arr || []).reduce((a,b)=> a + Number(b || 0), 0); }
 
 function normalizeMonth(m){
-  // garante estrutura sem quebrar
   m = m || {};
   m.fixed = Array.isArray(m.fixed) ? m.fixed : [];
   m.card  = Array.isArray(m.card) ? m.card : [];
+  m.cardRecurring = Array.isArray(m.cardRecurring) ? m.cardRecurring : []; // ✅ NEW
   m.goals = Array.isArray(m.goals) ? m.goals : [];
   m.incomeExtra = Array.isArray(m.incomeExtra) ? m.incomeExtra : [];
   return m;
@@ -35,9 +35,14 @@ function fixasMes(m){
   return sum(m.fixed.map(x => x.value));
 }
 
+// ✅ cartão = parcelas + assinaturas ativas
 function cartaoMes(m){
   m = normalizeMonth(m);
-  return sum(m.card.map(x => x.monthValue));
+  const parts = sum(m.card.map(x => x.monthValue));
+  const rec = sum(m.cardRecurring
+    .filter(x => x && x.active !== false)
+    .map(x => x.value));
+  return parts + rec;
 }
 
 function metasMes(m){
@@ -46,7 +51,6 @@ function metasMes(m){
 }
 
 function getSelectedYear(){
-  // pega o ano a partir do mês selecionado no header
   const ym = getSelectedMonth(); // "YYYY-MM"
   return Number(String(ym || "").split("-")[0]) || new Date().getFullYear();
 }
@@ -86,7 +90,6 @@ function buildYearData(year){
 }
 
 function renderEmptyYear(year){
-  // tabela
   const tbody = document.querySelector("#yearTable tbody");
   tbody.innerHTML = `
     <tr>
@@ -97,7 +100,6 @@ function renderEmptyYear(year){
     </tr>
   `;
 
-  // KPIs
   const kpiEl = document.getElementById("yearKpis");
   kpiEl.innerHTML = `
     <div class="card kpi">
@@ -122,7 +124,6 @@ function renderEmptyYear(year){
     </div>
   `;
 
-  // destrói gráficos
   destroyCharts();
 }
 
@@ -165,7 +166,6 @@ function renderKpis(data){
   const totalDespesas = totalFixas + totalCartao + totalMetas;
   const saldoAno = totalRenda - totalDespesas;
 
-  // melhor e pior mês
   const bestIdx = data.saldoArr.length ? data.saldoArr.indexOf(Math.max(...data.saldoArr)) : -1;
   const worstIdx = data.saldoArr.length ? data.saldoArr.indexOf(Math.min(...data.saldoArr)) : -1;
 
@@ -176,7 +176,6 @@ function renderKpis(data){
 
   const avgSaldo = data.saldoArr.length ? (sum(data.saldoArr) / data.saldoArr.length) : 0;
 
-  // maior gasto do ano (categoria)
   const gastos = [
     { label: "Fixas", value: totalFixas },
     { label: "Cartão", value: totalCartao },
@@ -241,7 +240,6 @@ function renderCharts(data){
 
   if (!ctxSaldo || !ctxBars || !ctxPie) return;
 
-  // Linha: saldo
   chartSaldo = new Chart(ctxSaldo, {
     type: "line",
     data: {
@@ -258,7 +256,6 @@ function renderCharts(data){
     }
   });
 
-  // Barras: renda x despesas
   const despesasArr = data.fixasArr.map((_, i) => data.fixasArr[i] + data.cartaoArr[i] + data.metasArr[i]);
 
   chartBars = new Chart(ctxBars, {
@@ -276,7 +273,6 @@ function renderCharts(data){
     }
   });
 
-  // Pizza: total por categoria no ano
   const totalFixas = sum(data.fixasArr);
   const totalCartao = sum(data.cartaoArr);
   const totalMetas = sum(data.metasArr);
@@ -310,7 +306,6 @@ function render(){
   renderCharts(data);
 }
 
-// Se trocar o mês no header, o ano acompanha (vai filtrar por ano automaticamente)
 document.getElementById("monthSelect")?.addEventListener("change", () => {
   render();
 });

@@ -16,13 +16,14 @@
         <img class="logo" src="assets/img/logo.png" alt="logo">
         <div class="brand">
           <h1>Cartão / Parcelas</h1>
-          <small>Cadastre compras parceladas e veja quando terminam</small>
+          <small>Cadastre compras parceladas e assinaturas mensais</small>
         </div>
       </div>
 
       <div class="actions">
         <select id="monthSelect"></select>
         <button id="exportCsv" class="blue">Exportar CSV</button>
+        <button id="copyPrevRecurring" class="blue">Copiar assinaturas do mês anterior</button>
       </div>
     </header>
 
@@ -34,6 +35,7 @@
       <a href="ano.html" data-page="ano">Ano</a>
     </nav>
 
+    <!-- PARCELAS -->
     <div class="card">
       <h3 style="margin:0 0 10px;">Adicionar parcela</h3>
 
@@ -85,6 +87,46 @@
       </div>
       <div class="helper" id="total"></div>
     </div>
+
+    <!-- ASSINATURAS -->
+    <div class="card">
+      <h3 style="margin:0 0 10px;">Assinaturas do cartão (mensais)</h3>
+
+      <div class="form-actions">
+        <div class="field">
+          <input id="recName" placeholder="Ex: Spotify / Netflix"/>
+          <small id="recNameError" class="field-error"></small>
+        </div>
+
+        <div class="field">
+          <input id="recValue" type="number" step="0.01" placeholder="Valor mensal (R$)"/>
+          <small id="recValueError" class="field-error"></small>
+        </div>
+
+        <button class="primary" id="addRecurring" disabled>Adicionar</button>
+      </div>
+
+      <div class="helper">Essas entradas entram no total do cartão do mês. Você pode desativar quando cancelar.</div>
+
+      <hr>
+
+      <div class="table-wrap">
+        <table class="table" id="recurringTable">
+          <thead>
+            <tr>
+              <th>Assinatura</th>
+              <th class="right">Valor</th>
+              <th>Ativa?</th>
+              <th class="right">Ações</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="helper" id="recurringTotal"></div>
+    </div>
+
   </div>
 
   <script type="module" src="assets/js/cartao.js"></script>
