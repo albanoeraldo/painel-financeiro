@@ -2,10 +2,21 @@ import { initHeader, getSelectedMonth } from "./ui.js";
 import { loadState, saveState, ensureMonth, uid, formatBRL, ymToLabel } from "./storage.js";
 import { createValidator } from "./validate.js";
 
-initHeader("dashboard");
+await initHeader("dashboard");
 
 import { requireAuth } from "./ui.js";
 await requireAuth();
+
+import { pullStateFromCloud } from "./cloudState.js";
+import { saveState } from "./storage.js";
+
+await requireAuth();
+
+const cloud = await pullStateFromCloud();
+if(cloud){
+  // joga no localStorage usando o seu saveState
+  saveState(cloud);
+}
 
 // Estado e mês (let pq muda ao trocar o mês)
 let ym = getSelectedMonth();
@@ -244,6 +255,10 @@ addExtraBtn?.addEventListener("click", ()=>{
 incomeBaseInput?.addEventListener("input", ()=>{ if(incomeBaseInput.classList.contains("invalid")) ruleSalaryOptional(); });
 extraNameInput?.addEventListener("input", ()=>{ if(extraNameInput.classList.contains("invalid")) ruleExtraName(); });
 extraValueInput?.addEventListener("input", ()=>{ if(extraValueInput.classList.contains("invalid")) ruleExtraValue(); });
+
+window.addEventListener("monthChanged", () => {
+  renderDashboard(); // ou sua função render()
+});
 
 // init
 renderDashboard();

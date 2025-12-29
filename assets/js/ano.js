@@ -1,10 +1,21 @@
 import { initHeader, getSelectedMonth } from "./ui.js";
 import { loadState, formatBRL, ymToLabel } from "./storage.js";
 
-initHeader("ano");
+await initHeader("ano");
 
 import { requireAuth } from "./ui.js";
 await requireAuth();
+
+import { pullStateFromCloud } from "./cloudState.js";
+import { saveState } from "./storage.js";
+
+await requireAuth();
+
+const cloud = await pullStateFromCloud();
+if(cloud){
+  // joga no localStorage usando o seu saveState
+  saveState(cloud);
+}
 
 const state = loadState();
 const allMonthKeys = Object.keys(state.months || {}).sort();
@@ -312,6 +323,8 @@ function render(){
 document.getElementById("monthSelect")?.addEventListener("change", () => {
   render();
 });
+
+window.addEventListener("monthChanged", () => render());
 
 // init
 render();

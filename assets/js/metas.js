@@ -2,10 +2,21 @@ import { initHeader, getSelectedMonth } from "./ui.js";
 import { loadState, saveState, ensureMonth, uid, formatBRL, ymToLabel } from "./storage.js";
 import { createValidator } from "./validate.js";
 
-initHeader("metas");
+await initHeader("metas");
 
 import { requireAuth } from "./ui.js";
 await requireAuth();
+
+import { pullStateFromCloud } from "./cloudState.js";
+import { saveState } from "./storage.js";
+
+await requireAuth();
+
+const cloud = await pullStateFromCloud();
+if(cloud){
+  // joga no localStorage usando o seu saveState
+  saveState(cloud);
+}
 
 // Estado e mês (let pq muda ao trocar mês)
 let ym = getSelectedMonth();
