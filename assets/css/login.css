@@ -30,29 +30,6 @@
   color: #666;
 }
 
-.input-group {
-  position: relative;
-  width: 100%;
-}
-
-.input-group input {
-  width: 100%;
-  padding: 12px 14px 12px 44px; /* espaço para o ícone */
-  border-radius: 8px;
-  border: 1px solid #dcdcdc;
-  font-size: 15px;
-}
-
-.input-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none; /* não atrapalha clique */
-  display: flex;
-  align-items: center;
-}
-
 .field {
   margin-bottom: 15px;
 }
