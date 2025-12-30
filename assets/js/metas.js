@@ -1,8 +1,7 @@
 import { initHeader, getSelectedMonth } from "./ui.js";
+await initHeader("metas");
 import { loadState, saveState, ensureMonth, uid, formatBRL, ymToLabel } from "./storage.js";
 import { createValidator } from "./validate.js";
-
-await initHeader("metas");
 
 import { requireAuth } from "./ui.js";
 await requireAuth();

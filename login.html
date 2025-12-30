@@ -3,34 +3,57 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Login • Controle Financeiro</title>
+  <title>Entrar • Controle Financeiro</title>
+
   <link rel="stylesheet" href="assets/css/base.css"/>
   <link rel="stylesheet" href="assets/css/components.css"/>
   <link rel="stylesheet" href="assets/css/responsive.css"/>
   <link rel="stylesheet" href="assets/css/tema.css"/>
+  <link rel="stylesheet" href="assets/css/auth.css"/>
 </head>
 <body>
-  <div class="container">
-    <div class="card" style="max-width:520px;margin:40px auto;">
-      <h2 style="margin:0 0 10px;">Entrar</h2>
-      <div class="helper" style="margin-bottom:12px;">Use seu e-mail e senha.</div>
 
-      <div class="form-actions" style="grid-template-columns: 1fr;">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-head">
+        <img class="auth-logo" src="assets/img/img-login.png" alt="logo">
+        <div class="auth-title">
+          <h1>Bem vindo(a) de volta!</h1>
+          <small>Acesse com seu e-mail e senha.</small>
+        </div>
+      </div>
+
+      <hr/>
+
+      <!-- aparece quando já existe sessão -->
+      <div id="alreadyBox" class="auth-info" style="display:none;">
+        Você já está logado.
+        <div class="auth-actions" style="margin-top:10px;">
+          <button id="goApp" class="blue">Ir para o app</button>
+          <button id="switchAccount" class="btn-danger">Trocar conta (Sair)</button>
+        </div>
+      </div>
+
+      <form class="auth-form" id="loginForm" autocomplete="on">
         <div class="field">
-          <input id="email" type="email" placeholder="Email" />
+          <input id="email" type="email" placeholder="E-mail" autocomplete="email"/>
           <small id="emailError" class="field-error"></small>
         </div>
 
         <div class="field">
-          <input id="password" type="password" placeholder="Senha" />
+          <input id="password" type="password" placeholder="Senha" autocomplete="current-password"/>
           <small id="passError" class="field-error"></small>
         </div>
 
-        <button class="primary" id="loginBtn">Entrar</button>
-        <button id="logoutBtn" class="btn-danger" style="display:none;">Sair</button>
+        <div class="auth-row">
+          <button id="loginBtn" class="primary grow" type="submit">
+            <span id="loginBtnText">Entrar</span>
+          </button>
+          <div id="spinner" class="spinner" aria-label="Carregando"></div>
+        </div>
 
-        <div class="helper" id="msg"></div>
-      </div>
+        <div id="authError" class="auth-error"></div>
+      </form>
     </div>
   </div>
 

@@ -1,7 +1,6 @@
 import { initHeader, getSelectedMonth } from "./ui.js";
-import { loadState, saveState, ensureMonth, uid, formatBRL, ymToLabel } from "./storage.js";
-
 await initHeader("fixas");
+import { loadState, saveState, ensureMonth, uid, formatBRL, ymToLabel } from "./storage.js";
 
 import { requireAuth } from "./ui.js";
 await requireAuth();
