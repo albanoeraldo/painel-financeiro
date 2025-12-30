@@ -1,20 +1,12 @@
 import { initHeader, getSelectedMonth } from "./ui.js";
-await initHeader("ano");
 import { loadState, formatBRL, ymToLabel } from "./storage.js";
-
-import { requireAuth } from "./ui.js";
-await requireAuth();
-
 import { pullStateFromCloud } from "./cloudState.js";
-import { saveState } from "./storage.js";
 
-await requireAuth();
+await initHeader("ano");
 
+// puxa nuvem e joga no local antes de renderizar
 const cloud = await pullStateFromCloud();
-if(cloud){
-  // joga no localStorage usando o seu saveState
-  saveState(cloud);
-}
+if (cloud) localStorage.setItem("albano_financas_v1", JSON.stringify(cloud));
 
 const state = loadState();
 const allMonthKeys = Object.keys(state.months || {}).sort();

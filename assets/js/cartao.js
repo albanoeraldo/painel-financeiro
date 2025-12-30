@@ -1,15 +1,9 @@
 import { initHeader, getSelectedMonth } from "./ui.js";
-await initHeader("cartao");
 import { loadState, saveState, ensureMonth, uid, formatBRL, ymToLabel } from "./storage.js";
 import { createValidator } from "./validate.js";
-
-import { requireAuth } from "./ui.js";
-await requireAuth();
-
 import { pullStateFromCloud } from "./cloudState.js";
-import { saveState } from "./storage.js";
 
-await requireAuth();
+await initHeader("cartao");
 
 const cloud = await pullStateFromCloud();
 if(cloud){

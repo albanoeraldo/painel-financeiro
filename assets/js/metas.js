@@ -1,15 +1,9 @@
 import { initHeader, getSelectedMonth } from "./ui.js";
-await initHeader("metas");
 import { loadState, saveState, ensureMonth, uid, formatBRL, ymToLabel } from "./storage.js";
 import { createValidator } from "./validate.js";
-
-import { requireAuth } from "./ui.js";
-await requireAuth();
-
 import { pullStateFromCloud } from "./cloudState.js";
-import { saveState } from "./storage.js";
 
-await requireAuth();
+await initHeader("metas");
 
 const cloud = await pullStateFromCloud();
 if(cloud){

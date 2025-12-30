@@ -1,21 +1,13 @@
 import { initHeader, getSelectedMonth } from "./ui.js";
-await initHeader("dashboard");
 import { loadState, saveState, ensureMonth, uid, formatBRL, ymToLabel } from "./storage.js";
 import { createValidator } from "./validate.js";
-
-import { requireAuth } from "./ui.js";
-await requireAuth();
-
 import { pullStateFromCloud } from "./cloudState.js";
-import { saveState } from "./storage.js";
 
-await requireAuth();
+await initHeader("dashboard");
 
+// ✅ Puxa do Supabase e grava no localStorage antes de usar state/month
 const cloud = await pullStateFromCloud();
-if(cloud){
-  // joga no localStorage usando o seu saveState
-  saveState(cloud);
-}
+if (cloud) saveState(cloud);
 
 // Estado e mês (let pq muda ao trocar o mês)
 let ym = getSelectedMonth();
@@ -52,7 +44,7 @@ const extraValueErr   = document.getElementById("incomeExtraValueError");
 const addExtraBtn = document.getElementById("addIncomeExtra");
 const extraTbody = document.querySelector("#incomeExtraTable tbody");
 
-// validator (o seu)
+// validator
 const v = createValidator({ showOn: "submit" });
 
 // helpers
@@ -94,7 +86,7 @@ function renderKpis(){
   const kpis = [
     { label:"Renda do mês", value: formatBRL(income) },
     { label:"Fixas", value: formatBRL(fixed) },
-    { label:"Cartão (parcelas + assinaturas)", value: formatBRL(card) }, // ✅ texto
+    { label:"Cartão (parcelas + assinaturas)", value: formatBRL(card) },
     { label:"Metas (guardado no mês)", value: formatBRL(goals) },
     { label:"Saldo (sobra/falta)", value: formatBRL(saldo), badge: saldo >= 0 ? "ok" : "bad" },
   ];
@@ -139,7 +131,6 @@ function renderMonthSummary(){
   const tbody = document.querySelector("#monthBreakdown tbody");
   if(!tbody) return;
 
-  // ✅ pegar as partes separadas (para a tabela ficar clara)
   const fixed = sum((month.fixed || []).map(x => x.value));
   const cardParts = sum((month.card || []).map(x => x.monthValue));
   const cardRec = cardRecurringTotal(month);
@@ -163,9 +154,6 @@ function renderMonthSummary(){
       </tr>
     `;
   }).join("");
-
-  // (opcional) se quiser, dá pra mostrar no helper:
-  // parcelas e assinaturas separadas, mas deixei simples.
 }
 
 function renderDashboard(){
@@ -176,7 +164,6 @@ function renderDashboard(){
 
   if (monthLabelEl) monthLabelEl.textContent = ymToLabel(ym);
 
-  // preenche inputs
   if (incomeBaseInput) incomeBaseInput.value = month.incomeBase ? String(Number(month.incomeBase)) : "";
 
   renderKpis();
@@ -184,28 +171,16 @@ function renderDashboard(){
   renderMonthSummary();
 }
 
-// ---------- VALIDAÇÕES (Index) ----------
+// ---------- VALIDAÇÕES ----------
 
-// Salário: opcional. Se preenchido, tem que ser >= 0.01
 function ruleSalaryOptional(){
   const val = (incomeBaseInput?.value || "").trim();
   if(!val){ clearErr(incomeBaseInput, incomeBaseErr); return true; }
   return v.numberMin(incomeBaseInput, incomeBaseErr, 0.01, "Informe um salário maior que 0.");
 }
 
-// Extra: ambos obrigatórios ao adicionar
 function ruleExtraName(){ return v.required(extraNameInput, extraNameErr, "Informe a descrição da entrada extra."); }
 function ruleExtraValue(){ return v.numberMin(extraValueInput, extraValueErr, 0.01, "Informe um valor maior que 0."); }
-
-// Eventos
-document.getElementById("monthSelect")?.addEventListener("change", ()=>{
-  // troca mês: limpa erros visuais
-  v.setShowMsg(false);
-  clearErr(incomeBaseInput, incomeBaseErr);
-  clearErr(extraNameInput, extraNameErr);
-  clearErr(extraValueInput, extraValueErr);
-  renderDashboard();
-});
 
 // salvar salário
 saveIncomeBaseBtn?.addEventListener("click", ()=>{
@@ -254,10 +229,6 @@ addExtraBtn?.addEventListener("click", ()=>{
 incomeBaseInput?.addEventListener("input", ()=>{ if(incomeBaseInput.classList.contains("invalid")) ruleSalaryOptional(); });
 extraNameInput?.addEventListener("input", ()=>{ if(extraNameInput.classList.contains("invalid")) ruleExtraName(); });
 extraValueInput?.addEventListener("input", ()=>{ if(extraValueInput.classList.contains("invalid")) ruleExtraValue(); });
-
-window.addEventListener("monthChanged", () => {
-  renderDashboard(); // ou sua função render()
-});
 
 // init
 renderDashboard();
