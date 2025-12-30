@@ -1,0 +1,120 @@
+.login-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+  background: #f5f7fb;
+}
+
+/* ESQUERDA */
+.login-left {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  background: #fff;
+  padding: 40px;
+  border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+}
+
+.login-card h1 {
+  margin-bottom: 5px;
+}
+
+.login-card p {
+  margin-bottom: 25px;
+  color: #666;
+}
+
+.input-group {
+  position: relative;
+  width: 100%;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px 14px 12px 44px; /* espaço para o ícone */
+  border-radius: 8px;
+  border: 1px solid #dcdcdc;
+  font-size: 15px;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none; /* não atrapalha clique */
+  display: flex;
+  align-items: center;
+}
+
+.field {
+  margin-bottom: 15px;
+}
+
+.field label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 5px;
+  color: #555;
+}
+
+.field input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  font-size: 15px;
+}
+
+button.primary {
+  width: 100%;
+  border-radius: 12px;
+  border: none;
+  background: #002540;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+button.primary:hover {
+  background: #0b3c5d;
+}
+
+.login-error {
+  margin-top: 12px;
+  font-size: 14px;
+  color: #e11d48;
+  min-height: 18px;
+}
+
+/* DIREITA */
+.login-right {
+  background: #002540;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-right img {
+  max-width: 70%;
+  height: auto;
+  border-radius: 50%;
+}
+
+/* MOBILE */
+@media (max-width: 900px) {
+  .login-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .login-right {
+    display: none;
+  }
+}

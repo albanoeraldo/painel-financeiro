@@ -2,61 +2,43 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
+  <title>Login • Controle Financeiro</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Entrar • Controle Financeiro</title>
-
-  <link rel="stylesheet" href="assets/css/base.css"/>
-  <link rel="stylesheet" href="assets/css/components.css"/>
-  <link rel="stylesheet" href="assets/css/responsive.css"/>
-  <link rel="stylesheet" href="assets/css/tema.css"/>
-  <link rel="stylesheet" href="assets/css/auth.css"/>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/login.css">
+  <script src="https://kit.fontawesome.com/7cd5b377e4.js" crossorigin="anonymous"></script>
 </head>
 <body>
+  <div class="login-wrapper">
+    <!-- COLUNA ESQUERDA -->
+    <div class="login-left">
+      <div class="login-card">
+        <h1>Bem-vindo(a)!</h1>
+        <p>Acesse com seu e-mail e senha</p>
 
-  <div class="auth-wrap">
-    <div class="auth-card">
-      <div class="auth-head">
-        <img class="auth-logo" src="assets/img/img-login.png" alt="logo">
-        <div class="auth-title">
-          <h1>Bem vindo(a) de volta!</h1>
-          <small>Acesse com seu e-mail e senha.</small>
-        </div>
-      </div>
-
-      <hr/>
-
-      <!-- aparece quando já existe sessão -->
-      <div id="alreadyBox" class="auth-info" style="display:none;">
-        Você já está logado.
-        <div class="auth-actions" style="margin-top:10px;">
-          <button id="goApp" class="blue">Ir para o app</button>
-          <button id="switchAccount" class="btn-danger">Trocar conta (Sair)</button>
-        </div>
-      </div>
-
-      <form class="auth-form" id="loginForm" autocomplete="on">
         <div class="field">
-          <input id="email" type="email" placeholder="E-mail" autocomplete="email"/>
-          <small id="emailError" class="field-error"></small>
+          <label>E-mail</label>
+          <input type="email" id="email" placeholder="seu@email.com">
         </div>
 
         <div class="field">
-          <input id="password" type="password" placeholder="Senha" autocomplete="current-password"/>
-          <small id="passError" class="field-error"></small>
+          <label>Senha</label>
+          <input type="password" id="password" placeholder="••••••••">
         </div>
 
-        <div class="auth-row">
-          <button id="loginBtn" class="primary grow" type="submit">
-            <span id="loginBtnText">Entrar</span>
-          </button>
-          <div id="spinner" class="spinner" aria-label="Carregando"></div>
-        </div>
+        <button id="loginBtn" class="primary">Login</button>
 
-        <div id="authError" class="auth-error"></div>
-      </form>
+        <div class="login-error" id="loginError"></div>
+      </div>
+    </div>
+
+    <!-- COLUNA DIREITA -->
+    <div class="login-right">
+      <img src="assets/img/img-login.png" alt="Albano Tech">
     </div>
   </div>
 
   <script type="module" src="assets/js/login.js"></script>
+
 </body>
 </html>
