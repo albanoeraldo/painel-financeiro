@@ -46,7 +46,7 @@ const CATEGORIES = [
   { key: "moradia", label: "🏠 Moradia" },
   { key: "alimentacao", label: "🍽️ Alimentação" },
   { key: "transporte", label: "🚗 Transporte" },
-  { key: "saude", label: "💊 Saúde" },
+  { key: "saude", label: "🩺 Saúde" },
   { key: "internet", label: "📶 Internet/Telefone" },
   { key: "lazer", label: "🎉 Lazer" },
   { key: "emprestimo", label: "💳 Empréstimo" },

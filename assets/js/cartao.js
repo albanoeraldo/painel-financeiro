@@ -26,12 +26,14 @@ const monthSelect = document.getElementById("monthSelect");
 
 // parcelas
 const nameInput = document.getElementById("name");
+const categorySelect = document.getElementById("category"); // agora é select
 const monthValueInput = document.getElementById("monthValue");
 const totalPartsInput = document.getElementById("totalParts");
 const startYmInput = document.getElementById("startYm");
 const addBtn = document.getElementById("add");
 
 const nameErr = document.getElementById("nameError");
+const categoryErr = document.getElementById("categoryError");
 const monthValueErr = document.getElementById("monthValueError");
 const totalPartsErr = document.getElementById("totalPartsError");
 const startYmErr = document.getElementById("startYmError");
@@ -41,13 +43,19 @@ const totalEl = document.getElementById("total");
 
 // assinaturas
 const recNameInput = document.getElementById("recName");
+const recCategorySelect = document.getElementById("recCategory"); // agora é select
 const recValueInput = document.getElementById("recValue");
 const addRecurringBtn = document.getElementById("addRecurring");
 const recNameErr = document.getElementById("recNameError");
+const recCategoryErr = document.getElementById("recCategoryError");
 const recValueErr = document.getElementById("recValueError");
 const recTbody = document.querySelector("#recurringTable tbody");
 const recTotalEl = document.getElementById("recurringTotal");
 const copyPrevRecurringBtn = document.getElementById("copyPrevRecurring");
+
+// categorias do cartão
+const cardCategoriesEl = document.getElementById("cardCategories");
+const cardCategoriesHintEl = document.getElementById("cardCategoriesHint");
 
 // --- validator (igual fixas: showMsg só depois do submit) ---
 const v = createValidator({ showOn: "submit" });
@@ -58,10 +66,66 @@ function clearErr(input, errEl){
 }
 
 /* =========================
+   CATEGORIAS (estilo Fixas)
+========================= */
+const CATEGORY_LIST = [
+  { key: "Moradia",          icon: "🏠", label: "Moradia" },
+  { key: "Alimentação",      icon: "🍽️", label: "Alimentação" },
+  { key: "Transporte",       icon: "🚗", label: "Transporte" },
+  { key: "Saúde",            icon: "🩺", label: "Saúde" },
+  { key: "Internet/Telefone",icon: "📶", label: "Internet/Telefone" },
+  { key: "Lazer",            icon: "🎉", label: "Lazer" },
+  { key: "Empréstimo",       icon: "💳", label: "Empréstimo" },
+  { key: "Outros",           icon: "📌", label: "Outros" },
+];
+
+const ICON_BY_CATEGORY = CATEGORY_LIST.reduce((acc, c) => {
+  acc[c.key] = c.icon;
+  return acc;
+}, {});
+
+function ensureCategoryExistsInList(cat){
+  const t = (cat || "").trim();
+  if(!t) return;
+  const exists = CATEGORY_LIST.some(x => x.key === t);
+  if(exists) return;
+  // se apareceu uma categoria antiga/custom, adiciona no final sem quebrar
+  CATEGORY_LIST.splice(CATEGORY_LIST.length - 1, 0, { key: t, icon: "🏷️", label: t }); // antes de "Outros"
+  ICON_BY_CATEGORY[t] = "🏷️";
+}
+
+function fillCategorySelect(selectEl, defaultValue = "Outros"){
+  if(!selectEl) return;
+
+  // garante categorias de itens existentes (caso tenha dados antigos/custom)
+  (month.card || []).forEach(it => ensureCategoryExistsInList(it.category));
+  (month.cardRecurring || []).forEach(it => ensureCategoryExistsInList(it.category));
+
+  const current = (selectEl.value || defaultValue || "Outros");
+
+  selectEl.innerHTML = CATEGORY_LIST.map(c => {
+    const text = `${c.icon} ${c.label}`;
+    return `<option value="${c.key}">${text}</option>`;
+  }).join("");
+
+  // seta padrão
+  selectEl.value = current || defaultValue || "Outros";
+}
+
+function catLabel(cat){
+  const c = (cat || "Outros").trim() || "Outros";
+  const icon = ICON_BY_CATEGORY[c] || "🏷️";
+  return `${icon} ${c}`;
+}
+
+/* =========================
    PARCELAS - regras
 ========================= */
 function ruleName(){
   return v.required(nameInput, nameErr, "Informe a compra/descrição.");
+}
+function ruleCategory(){
+  return v.required(categorySelect, categoryErr, "Selecione a categoria.");
 }
 function ruleMonthValue(){
   return v.numberMin(monthValueInput, monthValueErr, 0.01, "Informe um valor maior que 0.");
@@ -86,7 +150,7 @@ function ruleStartYmOptional(){
 }
 function validateAllParts(){
   return v.validateAll(
-    [ruleName, ruleMonthValue, ruleTotalPartsOptional, ruleStartYmOptional],
+    [ruleName, ruleCategory, ruleMonthValue, ruleTotalPartsOptional, ruleStartYmOptional],
     addBtn
   );
 }
@@ -97,6 +161,7 @@ function liveValidateParts(){
 }
 
 nameInput?.addEventListener("input", liveValidateParts);
+categorySelect?.addEventListener("change", liveValidateParts);
 monthValueInput?.addEventListener("input", liveValidateParts);
 totalPartsInput?.addEventListener("input", liveValidateParts);
 startYmInput?.addEventListener("input", liveValidateParts);
@@ -107,17 +172,21 @@ startYmInput?.addEventListener("input", liveValidateParts);
 function ruleRecName(){
   return v.required(recNameInput, recNameErr, "Informe a descrição da assinatura.");
 }
+function ruleRecCategory(){
+  return v.required(recCategorySelect, recCategoryErr, "Selecione a categoria.");
+}
 function ruleRecValue(){
   return v.numberMin(recValueInput, recValueErr, 0.01, "Informe um valor maior que 0.");
 }
 function validateAllRecurring(){
-  return v.validateAll([ruleRecName, ruleRecValue], addRecurringBtn);
+  return v.validateAll([ruleRecName, ruleRecCategory, ruleRecValue], addRecurringBtn);
 }
 function liveValidateRecurring(){
   validateAllRecurring();
 }
 
 recNameInput?.addEventListener("input", liveValidateRecurring);
+recCategorySelect?.addEventListener("change", liveValidateRecurring);
 recValueInput?.addEventListener("input", liveValidateRecurring);
 
 /* =========================
@@ -166,6 +235,63 @@ function totalAssinaturasMes(){
     .reduce((a,b)=> a + Number(b.value || 0), 0);
 }
 
+// total por categoria (parcelas + assinaturas ativas)
+function totalsByCategory(){
+  const map = new Map();
+
+  (month.card || []).forEach(it => {
+    const cat = (it.category || "Outros").trim() || "Outros";
+    map.set(cat, (map.get(cat) || 0) + Number(it.monthValue || 0));
+  });
+
+  (month.cardRecurring || [])
+    .filter(x => x.active !== false)
+    .forEach(it => {
+      const cat = (it.category || "Outros").trim() || "Outros";
+      map.set(cat, (map.get(cat) || 0) + Number(it.value || 0));
+    });
+
+  return Array.from(map.entries())
+    .map(([category, total]) => ({ category, total }))
+    .sort((a,b) => b.total - a.total);
+}
+
+function renderCardCategories(){
+  if(!cardCategoriesEl) return;
+
+  const list = totalsByCategory();
+  const totalAll = list.reduce((a,b)=> a + Number(b.total || 0), 0);
+  const max = Math.max(...list.map(x => x.total), 0);
+
+  if(list.length === 0){
+    cardCategoriesEl.innerHTML = `<div class="helper">Sem dados de cartão neste mês.</div>`;
+    if(cardCategoriesHintEl) cardCategoriesHintEl.textContent = "";
+    return;
+  }
+
+  cardCategoriesEl.innerHTML = list.map(item => {
+    const pct = max > 0 ? Math.round((item.total / max) * 100) : 0;
+
+    return `
+      <div style="display:flex; align-items:center; gap:12px; margin:10px 0;">
+        <div style="min-width:180px; font-weight:600;">${catLabel(item.category)}</div>
+
+        <div style="flex:1;">
+          <div style="height:10px; border-radius:999px; background:rgba(0,0,0,.08); overflow:hidden;">
+            <div style="height:10px; width:${pct}%; border-radius:999px; background:rgba(46, 204, 113, .9);"></div>
+          </div>
+        </div>
+
+        <div style="min-width:120px; text-align:right; font-weight:600;">${formatBRL(item.total)}</div>
+      </div>
+    `;
+  }).join("");
+
+  if(cardCategoriesHintEl){
+    cardCategoriesHintEl.innerHTML = `Total do cartão no mês: <b>${formatBRL(totalAll)}</b> <span class="helper">(parcelas + assinaturas ativas)</span>`;
+  }
+}
+
 function renderParts(){
   const total = totalParcelasMes();
 
@@ -178,10 +304,12 @@ function renderParts(){
     const start = item.startYm || "—";
     const end = (item.startYm && item.totalParts) ? calcEndYm(item.startYm, item.totalParts) : "—";
     const faltam = (item.startYm && item.totalParts) ? calcRemaining(ym, item.startYm, item.totalParts) : "—";
+    const cat = (item.category || "Outros").trim() || "Outros";
 
     return `
       <tr>
         <td>${item.name}</td>
+        <td>${catLabel(cat)}</td>
         <td class="right">${formatBRL(item.monthValue)}</td>
         <td>${start === "—" ? "—" : ymToLabel(start)}</td>
         <td>${end === "—" ? "—" : ymToLabel(end)}</td>
@@ -206,18 +334,23 @@ function renderParts(){
 function renderRecurring(){
   const list = (month.cardRecurring || []);
 
-  recTbody.innerHTML = list.map(item => `
-    <tr>
-      <td>${item.name}</td>
-      <td class="right">${formatBRL(item.value)}</td>
-      <td>
-        <input type="checkbox" class="rec-active" data-id="${item.id}" ${item.active === false ? "" : "checked"} />
-      </td>
-      <td class="right">
-        <button class="rec-del" data-id="${item.id}">Excluir</button>
-      </td>
-    </tr>
-  `).join("");
+  recTbody.innerHTML = list.map(item => {
+    const cat = (item.category || "Outros").trim() || "Outros";
+
+    return `
+      <tr>
+        <td>${item.name}</td>
+        <td>${catLabel(cat)}</td>
+        <td class="right">${formatBRL(item.value)}</td>
+        <td>
+          <input type="checkbox" class="rec-active" data-id="${item.id}" ${item.active === false ? "" : "checked"} />
+        </td>
+        <td class="right">
+          <button class="rec-del" data-id="${item.id}">Excluir</button>
+        </td>
+      </tr>
+    `;
+  }).join("");
 
   const totalRec = totalAssinaturasMes();
   if(recTotalEl) recTotalEl.innerHTML = `Assinaturas ativas no mês: <b>${formatBRL(totalRec)}</b>`;
@@ -247,6 +380,7 @@ function renderRecurring(){
 function renderAll(){
   renderParts();
   renderRecurring();
+  renderCardCategories();
 }
 
 /* =========================
@@ -258,17 +392,24 @@ monthSelect?.addEventListener("change", ()=>{
 
   month.card = Array.isArray(month.card) ? month.card : [];
   month.cardRecurring = Array.isArray(month.cardRecurring) ? month.cardRecurring : [];
+
+  // garante select preenchido ao trocar mês
+  fillCategorySelect(categorySelect, "Outros");
+  fillCategorySelect(recCategorySelect, "Outros");
+
   saveState(state);
 
   // reset visual de validação
   v.setShowMsg(false);
 
   clearErr(nameInput, nameErr);
+  clearErr(categorySelect, categoryErr);
   clearErr(monthValueInput, monthValueErr);
   clearErr(totalPartsInput, totalPartsErr);
   clearErr(startYmInput, startYmErr);
 
   clearErr(recNameInput, recNameErr);
+  clearErr(recCategorySelect, recCategoryErr);
   clearErr(recValueInput, recValueErr);
 
   validateAllParts();
@@ -282,6 +423,7 @@ addBtn?.addEventListener("click", ()=>{
   if(!validateAllParts()) return;
 
   const name = nameInput.value.trim();
+  const category = (categorySelect.value || "Outros").trim() || "Outros";
   const monthValue = Number(monthValueInput.value || 0);
 
   const totalPartsRaw = (totalPartsInput.value || "").trim();
@@ -293,6 +435,7 @@ addBtn?.addEventListener("click", ()=>{
   month.card.push({
     id: uid(),
     name,
+    category,
     monthValue,
     totalParts,
     startYm: startYmVal,
@@ -301,12 +444,14 @@ addBtn?.addEventListener("click", ()=>{
   saveState(state);
 
   nameInput.value = "";
+  // mantém categoria selecionada (igual Fixas, geralmente fica no último usado)
   monthValueInput.value = "";
   totalPartsInput.value = "";
   startYmInput.value = "";
 
   v.setShowMsg(false);
   clearErr(nameInput, nameErr);
+  clearErr(categorySelect, categoryErr);
   clearErr(monthValueInput, monthValueErr);
   clearErr(totalPartsInput, totalPartsErr);
   clearErr(startYmInput, startYmErr);
@@ -321,11 +466,13 @@ addRecurringBtn?.addEventListener("click", ()=>{
   if(!validateAllRecurring()) return;
 
   const name = recNameInput.value.trim();
+  const category = (recCategorySelect.value || "Outros").trim() || "Outros";
   const value = Number(recValueInput.value || 0);
 
   month.cardRecurring.push({
     id: uid(),
     name,
+    category,
     value,
     active: true
   });
@@ -333,10 +480,12 @@ addRecurringBtn?.addEventListener("click", ()=>{
   saveState(state);
 
   recNameInput.value = "";
+  // mantém categoria selecionada
   recValueInput.value = "";
 
   v.setShowMsg(false);
   clearErr(recNameInput, recNameErr);
+  clearErr(recCategorySelect, recCategoryErr);
   clearErr(recValueInput, recValueErr);
 
   validateAllRecurring();
@@ -354,21 +503,33 @@ copyPrevRecurringBtn?.addEventListener("click", ()=>{
     return;
   }
 
+  // garante categorias custom (se houver)
+  prevList.forEach(x => ensureCategoryExistsInList(x.category));
+
   // copia criando novos IDs (evita conflito)
   month.cardRecurring = prevList.map(x => ({
     id: uid(),
     name: x.name,
+    category: (x.category || "Outros").trim() || "Outros",
     value: Number(x.value || 0),
     active: x.active !== false
   }));
 
   saveState(state);
+
+  // recarrega selects com categorias (incluindo custom)
+  fillCategorySelect(categorySelect, "Outros");
+  fillCategorySelect(recCategorySelect, "Outros");
+
   renderAll();
 });
 
 /* =========================
    Init
 ========================= */
+fillCategorySelect(categorySelect, "Outros");
+fillCategorySelect(recCategorySelect, "Outros");
+
 v.setShowMsg(false);
 validateAllParts();
 validateAllRecurring();

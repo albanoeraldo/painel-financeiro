@@ -63,7 +63,7 @@ const CATEGORIES = [
   { key: "moradia", label: "🏠 Moradia" },
   { key: "alimentacao", label: "🍽️ Alimentação" },
   { key: "transporte", label: "🚗 Transporte" },
-  { key: "saude", label: "💊 Saúde" },
+  { key: "saude", label: "🩺 Saúde" },
   { key: "internet", label: "📶 Internet/Telefone" },
   { key: "lazer", label: "🎉 Lazer" },
   { key: "emprestimo", label: "💳 Empréstimo" },
@@ -73,6 +73,43 @@ const CATEGORIES = [
 function catLabel(key){
   const c = CATEGORIES.find(x => x.key === key);
   return c ? c.label : "📌 Outros";
+}
+
+/**
+ * ✅ NOVO: Normaliza categoria vinda do Fixas/Cartão
+ * - aceita "moradia" (key)
+ * - aceita "Moradia" (texto)
+ * - aceita "📶 Internet/Telefone" etc (texto com emoji)
+ */
+function normalizeCategoryKey(raw){
+  const s = String(raw || "").trim();
+  if(!s) return "outros";
+
+  // já é key?
+  if(CATEGORIES.some(c => c.key === s)) return s;
+
+  // remove emoji e normaliza texto
+  const clean = s
+    .replace(/^[^\p{L}\p{N}]*/gu, "") // tira emoji no início (best-effort)
+    .trim()
+    .toLowerCase();
+
+  const mapTextToKey = {
+    "moradia": "moradia",
+    "alimentação": "alimentacao",
+    "alimentacao": "alimentacao",
+    "transporte": "transporte",
+    "saúde": "saude",
+    "saude": "saude",
+    "internet/telefone": "internet",
+    "internet": "internet",
+    "lazer": "lazer",
+    "empréstimo": "emprestimo",
+    "emprestimo": "emprestimo",
+    "outros": "outros",
+  };
+
+  return mapTextToKey[clean] || "outros";
 }
 
 // ✅ total das assinaturas ativas do cartão
@@ -96,12 +133,50 @@ function totalsByCategoryFixed(m){
   const mapPending = {};
 
   (m.fixed || []).forEach(it=>{
-    const key = it.category || "outros";
+    const key = normalizeCategoryKey(it.category || "outros");
     const val = Number(it.value || 0);
 
     mapTotal[key] = (mapTotal[key] || 0) + val;
     if(!it.paid) mapPending[key] = (mapPending[key] || 0) + val;
   });
+
+  return { mapTotal, mapPending };
+}
+
+/**
+ * ✅ NOVO: soma por categoria das despesas do mês
+ * (Fixas PENDENTES + Cartão (parcelas + assinaturas ativas))
+ */
+function totalsByCategoryExpenses(m){
+  const mapTotal = {}; // total por categoria das despesas do mês (pendentes + cartão)
+  const mapPending = {}; // pendente por categoria (aqui só faz sentido para Fixas)
+
+  // FIXAS (pendentes) por categoria
+  (m.fixed || []).forEach(it=>{
+    const key = normalizeCategoryKey(it.category || "outros");
+    const val = Number(it.value || 0);
+
+    if(!it.paid){
+      mapTotal[key] = (mapTotal[key] || 0) + val;
+      mapPending[key] = (mapPending[key] || 0) + val;
+    }
+  });
+
+  // CARTÃO - PARCELAS (sempre entram no mês)
+  (m.card || []).forEach(it=>{
+    const key = normalizeCategoryKey(it.category || "outros");
+    const val = Number(it.monthValue || 0);
+    mapTotal[key] = (mapTotal[key] || 0) + val;
+  });
+
+  // CARTÃO - ASSINATURAS ATIVAS
+  (m.cardRecurring || [])
+    .filter(x => x && x.active !== false)
+    .forEach(it=>{
+      const key = normalizeCategoryKey(it.category || "outros");
+      const val = Number(it.value || 0);
+      mapTotal[key] = (mapTotal[key] || 0) + val;
+    });
 
   return { mapTotal, mapPending };
 }
@@ -166,6 +241,7 @@ function renderKpis(){
         <div class="label">${k.label}</div>
         <div class="value">${k.value}</div>
         ${k.badge ? `<div style="margin-top:10px;"><span class="${cls}">${k.badge==="ok" ? "✅ Positivo" : "❌ Negativo"}</span></div>` : ""}
+
         ${
           k.label === "Fixas (pendentes)"
             ? `<div class="helper" style="margin-top:10px;">Pagas: <b>${formatBRL(fixedPaid)}</b> • Total fixas: <b>${formatBRL(fixedTotal)}</b></div>`
@@ -211,7 +287,7 @@ function ensureCategoriesCard(){
     <h3 style="margin:0 0 10px;">Categorias do mês</h3>
     <div id="categoriesSummary"></div>
     <div class="helper" style="margin-top:8px;">
-      Dica: esse resumo usa as categorias das <b>Fixas</b>. (Cartão/Metas dá pra evoluir depois.)
+      Dica: esse resumo usa categorias das <b>Fixas (pendentes)</b> + <b>Cartão</b>.
     </div>
   `;
   container.appendChild(card);
@@ -223,7 +299,8 @@ function renderCategories(){
   const el = ensureCategoriesCard();
   if(!el) return;
 
-  const { mapTotal, mapPending } = totalsByCategoryFixed(month);
+  // ✅ agora integra Fixas (pendentes) + Cartão
+  const { mapTotal, mapPending } = totalsByCategoryExpenses(month);
 
   const entries = Object.entries(mapTotal)
     .map(([k, total]) => {
@@ -234,7 +311,7 @@ function renderCategories(){
     .sort((a,b)=> b.total - a.total);
 
   if(!entries.length){
-    el.innerHTML = `<div class="empty"><div><div class="title">Sem dados por categoria</div><div class="desc">Adicione fixas com categoria para aparecer aqui.</div></div></div>`;
+    el.innerHTML = `<div class="empty"><div><div class="title">Sem dados por categoria</div><div class="desc">Adicione Fixas/Cartão com categoria para aparecer aqui.</div></div></div>`;
     return;
   }
 
@@ -250,7 +327,7 @@ function renderCategories(){
           <div style="font-weight:600;">${catLabel(x.k)}</div>
           <div class="right" style="white-space:nowrap;">
             <b>${formatBRL(x.total)}</b>
-            ${x.pending !== x.total ? `<span style="opacity:.7;"> • pendente ${formatBRL(x.pending)}</span>` : ``}
+            ${x.pending > 0 ? `<span style="opacity:.7;"> • fixas pendente ${formatBRL(x.pending)}</span>` : ``}
           </div>
         </div>
 
@@ -259,8 +336,8 @@ function renderCategories(){
         </div>
 
         ${
-          x.pending !== x.total
-            ? `<div class="helper" style="margin-top:6px;">Pendente: ${pctPend.toFixed(0)}%</div>`
+          x.pending > 0
+            ? `<div class="helper" style="margin-top:6px;">Fixas pendente: ${pctPend.toFixed(0)}%</div>`
             : ``
         }
       </div>
