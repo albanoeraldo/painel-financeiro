@@ -14,13 +14,15 @@ let ym = getSelectedMonth();
 const state = loadState();
 let month = ensureMonth(state, ym);
 
-// garante estrutura
+// -------------------------
+// Normalização
+// -------------------------
 function normalizeMonth(m){
   m.incomeBase  = Number(m.incomeBase || 0);
   m.incomeExtra = Array.isArray(m.incomeExtra) ? m.incomeExtra : [];
   m.fixed       = Array.isArray(m.fixed) ? m.fixed : [];
   m.card        = Array.isArray(m.card) ? m.card : [];
-  m.cardRecurring = Array.isArray(m.cardRecurring) ? m.cardRecurring : []; // ✅ NEW
+  m.cardRecurring = Array.isArray(m.cardRecurring) ? m.cardRecurring : [];
   m.goals       = Array.isArray(m.goals) ? m.goals : [];
   return m;
 }
@@ -54,6 +56,25 @@ function clearErr(input, errEl){
   if (errEl) errEl.textContent = "";
 }
 
+// -------------------------
+// Categorias (para o Dashboard)
+// -------------------------
+const CATEGORIES = [
+  { key: "moradia", label: "🏠 Moradia" },
+  { key: "alimentacao", label: "🍽️ Alimentação" },
+  { key: "transporte", label: "🚗 Transporte" },
+  { key: "saude", label: "💊 Saúde" },
+  { key: "internet", label: "📶 Internet/Telefone" },
+  { key: "lazer", label: "🎉 Lazer" },
+  { key: "emprestimo", label: "💳 Empréstimo" },
+  { key: "outros", label: "📌 Outros" },
+];
+
+function catLabel(key){
+  const c = CATEGORIES.find(x => x.key === key);
+  return c ? c.label : "📌 Outros";
+}
+
 // ✅ total das assinaturas ativas do cartão
 function cardRecurringTotal(m){
   return sum((m.cardRecurring || [])
@@ -61,8 +82,32 @@ function cardRecurringTotal(m){
     .map(x => x.value));
 }
 
+function fixedTotals(m){
+  const fixedTotal = sum((m.fixed || []).map(x => x.value));
+  const fixedPending = sum((m.fixed || []).filter(x => !x.paid).map(x => x.value));
+  const fixedPaid = fixedTotal - fixedPending;
+  return { fixedTotal, fixedPending, fixedPaid };
+}
+
+function totalsByCategoryFixed(m){
+  // soma por categoria (todas as fixas)
+  const mapTotal = {};
+  // soma por categoria (somente pendentes)
+  const mapPending = {};
+
+  (m.fixed || []).forEach(it=>{
+    const key = it.category || "outros";
+    const val = Number(it.value || 0);
+
+    mapTotal[key] = (mapTotal[key] || 0) + val;
+    if(!it.paid) mapPending[key] = (mapPending[key] || 0) + val;
+  });
+
+  return { mapTotal, mapPending };
+}
+
 function calcTotals(m){
-  const fixed = sum((m.fixed || []).map(x => x.value));
+  const { fixedTotal, fixedPending, fixedPaid } = fixedTotals(m);
 
   // ✅ parcelas + assinaturas
   const cardParts = sum((m.card || []).map(x => x.monthValue));
@@ -74,20 +119,40 @@ function calcTotals(m){
   const incomeBase = Number(m.incomeBase || 0);
   const incomeExtra = (m.incomeExtra || []).reduce((a,b)=> a + Number(b.value || 0), 0);
   const income = incomeBase + incomeExtra;
-  const saldo = income - fixed - card - goals;
 
-  return { fixed, card, goals, incomeBase, incomeExtra, income, saldo };
+  // ✅ NOVO: dashboard considera FIXAS PENDENTES (não pagas)
+  const despesasPendentes = fixedPending + card + goals;
+  const saldo = income - despesasPendentes;
+
+  return {
+    fixedTotal,
+    fixedPending,
+    fixedPaid,
+    card,
+    goals,
+    incomeBase,
+    incomeExtra,
+    income,
+    despesasPendentes,
+    saldo
+  };
 }
 
-// renders
+// -------------------------
+// Renders
+// -------------------------
 function renderKpis(){
-  const { fixed, card, goals, income, saldo } = calcTotals(month);
+  const {
+    fixedTotal, fixedPending, fixedPaid,
+    card, goals, income, despesasPendentes, saldo
+  } = calcTotals(month);
 
   const kpis = [
     { label:"Renda do mês", value: formatBRL(income) },
-    { label:"Fixas", value: formatBRL(fixed) },
+    { label:"Fixas (pendentes)", value: formatBRL(fixedPending) },
     { label:"Cartão (parcelas + assinaturas)", value: formatBRL(card) },
     { label:"Metas (guardado no mês)", value: formatBRL(goals) },
+    { label:"Falta pagar (mês)", value: formatBRL(despesasPendentes) },
     { label:"Saldo (sobra/falta)", value: formatBRL(saldo), badge: saldo >= 0 ? "ok" : "bad" },
   ];
 
@@ -101,6 +166,11 @@ function renderKpis(){
         <div class="label">${k.label}</div>
         <div class="value">${k.value}</div>
         ${k.badge ? `<div style="margin-top:10px;"><span class="${cls}">${k.badge==="ok" ? "✅ Positivo" : "❌ Negativo"}</span></div>` : ""}
+        ${
+          k.label === "Fixas (pendentes)"
+            ? `<div class="helper" style="margin-top:10px;">Pagas: <b>${formatBRL(fixedPaid)}</b> • Total fixas: <b>${formatBRL(fixedTotal)}</b></div>`
+            : ``
+        }
       </div>
     `;
   }).join("");
@@ -127,19 +197,93 @@ function renderExtras(){
   });
 }
 
+function ensureCategoriesCard(){
+  let el = document.getElementById("categoriesSummary");
+  if(el) return el;
+
+  // cria um card no final da container se não existir no HTML
+  const container = document.querySelector(".container");
+  if(!container) return null;
+
+  const card = document.createElement("div");
+  card.className = "card";
+  card.innerHTML = `
+    <h3 style="margin:0 0 10px;">Categorias do mês</h3>
+    <div id="categoriesSummary"></div>
+    <div class="helper" style="margin-top:8px;">
+      Dica: esse resumo usa as categorias das <b>Fixas</b>. (Cartão/Metas dá pra evoluir depois.)
+    </div>
+  `;
+  container.appendChild(card);
+
+  return document.getElementById("categoriesSummary");
+}
+
+function renderCategories(){
+  const el = ensureCategoriesCard();
+  if(!el) return;
+
+  const { mapTotal, mapPending } = totalsByCategoryFixed(month);
+
+  const entries = Object.entries(mapTotal)
+    .map(([k, total]) => {
+      const pending = Number(mapPending[k] || 0);
+      return { k, total: Number(total || 0), pending };
+    })
+    .filter(x => x.total > 0)
+    .sort((a,b)=> b.total - a.total);
+
+  if(!entries.length){
+    el.innerHTML = `<div class="empty"><div><div class="title">Sem dados por categoria</div><div class="desc">Adicione fixas com categoria para aparecer aqui.</div></div></div>`;
+    return;
+  }
+
+  const max = Math.max(...entries.map(x=> x.total));
+
+  el.innerHTML = entries.map(x=>{
+    const pct = max > 0 ? (x.total / max) * 100 : 0;
+    const pctPend = x.total > 0 ? (x.pending / x.total) * 100 : 0;
+
+    return `
+      <div style="margin:10px 0;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+          <div style="font-weight:600;">${catLabel(x.k)}</div>
+          <div class="right" style="white-space:nowrap;">
+            <b>${formatBRL(x.total)}</b>
+            ${x.pending !== x.total ? `<span style="opacity:.7;"> • pendente ${formatBRL(x.pending)}</span>` : ``}
+          </div>
+        </div>
+
+        <div style="height:10px; background:rgba(2,6,23,.08); border-radius:999px; overflow:hidden; margin-top:8px;">
+          <div style="width:${pct}%; height:100%; background:rgba(37,99,235,.85);"></div>
+        </div>
+
+        ${
+          x.pending !== x.total
+            ? `<div class="helper" style="margin-top:6px;">Pendente: ${pctPend.toFixed(0)}%</div>`
+            : ``
+        }
+      </div>
+    `;
+  }).join("");
+}
+
 function renderMonthSummary(){
   const tbody = document.querySelector("#monthBreakdown tbody");
   if(!tbody) return;
 
-  const fixed = sum((month.fixed || []).map(x => x.value));
+  // ✅ aqui também considera fixas pendentes
+  const { fixedTotal, fixedPending } = fixedTotals(month);
+
   const cardParts = sum((month.card || []).map(x => x.monthValue));
   const cardRec = cardRecurringTotal(month);
   const card = cardParts + cardRec;
+
   const goals = sum((month.goals || []).map(x => x.saved));
-  const totalDespesas = fixed + card + goals;
+  const totalDespesas = fixedPending + card + goals;
 
   const rows = [
-    { name:"Fixas", value: fixed },
+    { name:"Fixas (pendentes)", value: fixedPending },
     { name:"Cartão", value: card },
     { name:"Metas", value: goals },
   ];
@@ -154,6 +298,12 @@ function renderMonthSummary(){
       </tr>
     `;
   }).join("");
+
+  // se existir um lugar pra mostrar uma observação do total das fixas, coloca
+  const foot = document.querySelector("#monthBreakdownFoot");
+  if(foot){
+    foot.innerHTML = `Total fixas (incluindo pagas): <b>${formatBRL(fixedTotal)}</b>`;
+  }
 }
 
 function renderDashboard(){
@@ -163,16 +313,15 @@ function renderDashboard(){
   saveState(state);
 
   if (monthLabelEl) monthLabelEl.textContent = ymToLabel(ym);
-
   if (incomeBaseInput) incomeBaseInput.value = month.incomeBase ? String(Number(month.incomeBase)) : "";
 
   renderKpis();
   renderExtras();
   renderMonthSummary();
+  renderCategories();
 }
 
 // ---------- VALIDAÇÕES ----------
-
 function ruleSalaryOptional(){
   const val = (incomeBaseInput?.value || "").trim();
   if(!val){ clearErr(incomeBaseInput, incomeBaseErr); return true; }
@@ -225,7 +374,7 @@ addExtraBtn?.addEventListener("click", ()=>{
   renderDashboard();
 });
 
-// UX: ao mexer depois do submit, pode revalidar
+// UX
 incomeBaseInput?.addEventListener("input", ()=>{ if(incomeBaseInput.classList.contains("invalid")) ruleSalaryOptional(); });
 extraNameInput?.addEventListener("input", ()=>{ if(extraNameInput.classList.contains("invalid")) ruleExtraName(); });
 extraValueInput?.addEventListener("input", ()=>{ if(extraValueInput.classList.contains("invalid")) ruleExtraValue(); });
