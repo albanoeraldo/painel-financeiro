@@ -1,7 +1,7 @@
 @charset "UTF-8";
 
 /* ===== Grid geral ===== */
-@media (max-width: 900px){
+@media (max-width: 899px){
   .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .brand h1{ font-size:20px; }
 }
@@ -11,15 +11,79 @@
   .brand h1{ font-size:15px; }
 }
 
-/* ===== Fixas: form responsivo ===== */
-@media (max-width: 900px){
-  .form-actions{ grid-template-columns: 1fr 1fr; }
-  .form-actions button{ grid-column: 1 / -1; }
+/* ===== Fixas: layout melhor no desktop e mobile ===== */
+.row.stack{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
 }
 
-@media (max-width: 520px){
-  .form-actions{ grid-template-columns: 1fr; }
+.form-actions.fixas-grid{
+  display:grid;
+  gap:12px;
+  align-items:end;
 }
+
+.fixas-actions{
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center; 
+  margin-top: 14px;
+}
+
+.fixas-actions button{
+  min-width: 220px; 
+  height: 44px;
+  border-radius: 12px;
+}
+
+#importPrevHint{
+  display: block;
+  margin-top: 8px;
+  text-align: center;
+  opacity: .75;
+  font-size: 12px;
+}
+
+/* desktop */
+@media (min-width: 900px){
+  .form-actions.fixas-grid{
+    grid-template-columns: 2.2fr 0.9fr 0.7fr 1.2fr 0.5fr 1.3fr;
+  }
+
+  #addFixedBtn, #importPrevBtn{
+    width: 100%;
+  }
+}
+
+/* mobile */
+@media (max-width: 899px){
+  .form-actions.fixas-grid{
+    grid-template-columns: 1fr;
+  }
+  #addFixedBtn, #importPrevBtn{
+    width: 100%;
+  }
+
+  .fixas-actions{
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .fixas-actions button{
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+.btn-soft{
+  border:1px solid rgba(0,0,0,.12);
+  background:#2563eb;
+  color: #ffffff;
+  border-radius:12px;
+  cursor:pointer;
+}
+
 
 /* ===== Header mobile (mês + export na “coluna direita”) ===== */
 @media (max-width: 790px){

@@ -25,9 +25,8 @@
 
       <div class="actions">
         <select id="monthSelect"></select>
-        <button id="exportCsv" class="blue">Exportar CSV</button>
-        <!-- ADD -->
-        <button id="logoutBtn" class="btn-danger">Sair</button>
+        <button id="exportCsv" class="blue" type="button">Exportar CSV</button>
+        <button id="logoutBtn" class="btn-danger" type="button">Sair</button>
       </div>
     </header>
 
@@ -39,12 +38,13 @@
       <a href="ano.html" data-page="ano">Ano</a>
     </nav>
 
-    <div class="row">
+    <div class="row stack">
+
       <!-- Card: Adicionar fixa -->
       <div class="card">
         <h3 style="margin:0 0 10px;">Adicionar fixa</h3>
 
-        <div class="form-actions">
+        <div class="form-actions fixas-grid">
           <div class="field">
             <input id="descFixa" type="text" placeholder="Descrição (ex: Luz)">
             <small id="descFixaError" class="field-error"></small>
@@ -60,17 +60,57 @@
             <small id="dueDayError" class="field-error"></small>
           </div>
 
-          <button id="addFixedBtn" class="primary">Adicionar</button>
+          <!-- Categoria -->
+          <div class="field">
+            <select id="categorySelect">
+              <option value="">📌 Categoria</option>
+              <option value="alimentacao">🍔 Alimentação</option>
+              <option value="farmacia">💊 Farmácia</option>
+              <option value="transporte">🚗 Transporte</option>
+              <option value="casa">🏠 Casa</option>
+              <option value="internet">📶 Internet</option>
+              <option value="energia">⚡ Energia</option>
+              <option value="assinaturas">🎬 Assinaturas</option>
+              <option value="emprestimo">💳 Empréstimo</option>
+              <option value="outros">📌 Outros</option>
+            </select>
+            <small id="categoryError" class="field-error"></small>
+          </div>
+
+          <!-- Parcelas (opcional) -->
+          <div class="field">
+            <input id="loanParts" type="number" min="1" placeholder="Parc.">
+            <small id="loanPartsError" class="field-error"></small>
+          </div>
+
+          <!-- Início (opcional) -->
+          <div class="field">
+            <input id="loanStartYm" type="month">
+            <small id="loanStartYmError" class="field-error"></small>
+          </div>
         </div>
 
-        <div class="helper">Dica: se uma conta não existe em um mês, é só adicionar naquele mês.</div>
+        <!-- Botões -->
+        <div class="fixas-actions">
+          <button id="addFixedBtn" type="button" class="primary">Adicionar</button>
+          <button id="importPrevBtn" type="button" class="blue">Importar mês anterior</button>
+        </div>
+
+        <small id="importPrevHint" class="hint"></small>
+
+        <div class="helper">
+          Dica: selecione a categoria. Se for <b>Empréstimo</b>, preencha “Parcelas” e “Início” para calcular “Termina” e “Faltam”.
+        </div>
       </div>
+      <!-- ✅ FECHA o card "Adicionar fixa" aqui -->
 
       <!-- Card: Resumo -->
       <div class="card">
         <h3 style="margin:0 0 10px;">Resumo</h3>
         <div id="summary" class="badge"></div>
+        <div id="summaryCats" class="helper" style="margin-top:8px;"></div>
       </div>
+
     </div>
 
     <!-- Lista -->
@@ -89,8 +129,11 @@
           <thead>
             <tr>
               <th>Descrição</th>
+              <th>Categoria</th>
               <th>Venc.</th>
               <th class="right">Valor</th>
+              <th>Termina</th>
+              <th>Faltam</th>
               <th style="text-align:center;">Pago?</th>
               <th class="right">Ações</th>
             </tr>
