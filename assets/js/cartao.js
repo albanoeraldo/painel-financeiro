@@ -53,6 +53,9 @@ const recTbody = document.querySelector("#recurringTable tbody");
 const recTotalEl = document.getElementById("recurringTotal");
 const copyPrevRecurringBtn = document.getElementById("copyPrevRecurring");
 
+// ✅ NOVO: botão para copiar cartão inteiro (parcelas + assinaturas)
+const copyPrevCardBtn = document.getElementById("copyPrevCard");
+
 // categorias do cartão
 const cardCategoriesEl = document.getElementById("cardCategories");
 const cardCategoriesHintEl = document.getElementById("cardCategoriesHint");
@@ -221,6 +224,47 @@ function calcRemaining(ymSelected, startYm, totalParts){
 
   if(curIdx > endIdx) return "0";
   return String((endIdx - curIdx) + 1);
+}
+
+/* =========================
+   ✅ NOVO: Copiar cartão (parcelas + assinaturas)
+   - Substitui o mês atual (igual Fixas)
+========================= */
+function copyCardFromMonth(sourceYm, targetMonth){
+  const sourceMonth = state.months?.[sourceYm];
+
+  const srcParts = Array.isArray(sourceMonth?.card) ? sourceMonth.card : [];
+  const srcRec   = Array.isArray(sourceMonth?.cardRecurring) ? sourceMonth.cardRecurring : [];
+
+  if(srcParts.length === 0 && srcRec.length === 0){
+    alert("Não encontrei cartão (parcelas/assinaturas) no mês anterior.");
+    return false;
+  }
+
+  // garante categorias custom (se houver)
+  srcParts.forEach(x => ensureCategoryExistsInList(x.category));
+  srcRec.forEach(x => ensureCategoryExistsInList(x.category));
+
+  // copia parcelas (novos ids)
+  targetMonth.card = srcParts.map(x => ({
+    id: uid(),
+    name: x.name,
+    category: (x.category || "Outros").trim() || "Outros",
+    monthValue: Number(x.monthValue || 0),
+    totalParts: x.totalParts ? Number(x.totalParts) : null,
+    startYm: x.startYm || null
+  }));
+
+  // copia assinaturas (novos ids)
+  targetMonth.cardRecurring = srcRec.map(x => ({
+    id: uid(),
+    name: x.name,
+    category: (x.category || "Outros").trim() || "Outros",
+    value: Number(x.value || 0),
+    active: x.active !== false
+  }));
+
+  return true;
 }
 
 /* =========================
@@ -492,7 +536,23 @@ addRecurringBtn?.addEventListener("click", ()=>{
   renderAll();
 });
 
-// copiar assinaturas do mês anterior
+// copiar cartão (parcelas + assinaturas) do mês anterior ✅
+copyPrevCardBtn?.addEventListener("click", ()=>{
+  const prev = prevYm(ym);
+
+  const ok = copyCardFromMonth(prev, month);
+  if(!ok) return;
+
+  saveState(state);
+
+  // recarrega selects com categorias (incluindo custom)
+  fillCategorySelect(categorySelect, "Outros");
+  fillCategorySelect(recCategorySelect, "Outros");
+
+  renderAll();
+});
+
+// copiar assinaturas do mês anterior (mantido caso exista botão na tela)
 copyPrevRecurringBtn?.addEventListener("click", ()=>{
   const prev = prevYm(ym);
   const prevMonth = state.months?.[prev];
