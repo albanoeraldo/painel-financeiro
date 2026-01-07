@@ -1,17 +1,10 @@
 @charset "UTF-8";
 
-/* ===== Grid geral ===== */
-@media (max-width: 899px){
-  .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .brand h1{ font-size:20px; }
-}
+/* =========================================================
+   BASE (desktop-first) – componentes que valem em qualquer tela
+========================================================= */
 
-@media (max-width: 520px){
-  .grid{ grid-template-columns: 1fr; }
-  .brand h1{ font-size:15px; }
-}
-
-/* ===== Fixas: layout melhor no desktop e mobile ===== */
+/* Fixas: layout geral */
 .row.stack{
   display:flex;
   flex-direction:column;
@@ -25,175 +18,249 @@
 }
 
 .fixas-actions{
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: center; 
-  margin-top: 14px;
+  display:flex;
+  gap:12px;
+  align-items:center;
+  justify-content:center;
+  margin-top:14px;
 }
 
 .fixas-actions button{
-  min-width: 220px; 
-  height: 44px;
-  border-radius: 12px;
+  min-width:220px;
+  height:44px;
+  border-radius:12px;
 }
 
 #importPrevHint{
-  display: block;
-  margin-top: 8px;
-  text-align: center;
-  opacity: .75;
-  font-size: 12px;
+  display:block;
+  margin-top:8px;
+  text-align:center;
+  opacity:.75;
+  font-size:12px;
 }
 
-/* desktop */
+/* Botão helper */
+.btn-soft{
+  border:1px solid rgba(0,0,0,.12);
+  background:#2563eb;
+  color:#ffffff;
+  border-radius:12px;
+  cursor:pointer;
+}
+
+/* =========================================================
+   GRID GERAL
+========================================================= */
+
+/* até 899px: grid 2 colunas */
+@media (max-width: 899px){
+  .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .brand h1{ font-size:20px; }
+}
+
+/* até 520px: grid 1 coluna */
+@media (max-width: 520px){
+  .grid{ grid-template-columns: 1fr; }
+  .brand h1{ font-size:15px; }
+}
+
+/* =========================================================
+   FIXAS – Desktop
+========================================================= */
 @media (min-width: 900px){
   .form-actions.fixas-grid{
     grid-template-columns: 2.2fr 0.9fr 0.7fr 1.2fr 0.5fr 1.3fr;
   }
 
-  #addFixedBtn, #importPrevBtn{
-    width: 100%;
+  #addFixedBtn,
+  #importPrevBtn{
+    width:100%;
   }
 }
 
-/* mobile */
+/* =========================================================
+   FIXAS – Mobile
+========================================================= */
 @media (max-width: 899px){
   .form-actions.fixas-grid{
     grid-template-columns: 1fr;
   }
-  #addFixedBtn, #importPrevBtn{
-    width: 100%;
+
+  #addFixedBtn,
+  #importPrevBtn{
+    width:100%;
   }
 
+  /* mantém qualquer .form-actions em coluna (cartão/meta etc.) */
   .form-actions{
     grid-template-columns: 1fr;
   }
 
   .fixas-actions{
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction:column;
+    align-items:stretch;
   }
+
   .fixas-actions button{
-    width: 100%;
-    min-width: 0;
+    width:100%;
+    min-width:0;
   }
 }
 
-.btn-soft{
-  border:1px solid rgba(0,0,0,.12);
-  background:#2563eb;
-  color: #ffffff;
-  border-radius:12px;
-  cursor:pointer;
-}
-
-
-/* ===== Header mobile (mês + export na “coluna direita”) ===== */
+/* =========================================================
+   HEADER – Mobile
+========================================================= */
 @media (max-width: 790px){
   header{
     display:grid;
-    grid-template-columns: auto 1fr;
-    grid-template-areas:
-      "left right";
+    grid-template-columns:auto 1fr;
+    grid-template-areas:"left right";
     align-items:center;
     gap:12px;
   }
 
   header .header-left{
-    grid-area: left;
+    grid-area:left;
     display:flex;
     align-items:center;
     gap:12px;
-    min-width: 0;
+    min-width:0;
   }
 
-  header .brand{ min-width: 0; }
+  header .brand{ min-width:0; }
 
   header .actions{
-    grid-area: right;
-    justify-self: end;
+    grid-area:right;
+    justify-self:end;
     display:flex;
     flex-direction:column;
     align-items:flex-end;
     gap:8px;
-    width: min(320px, 100%);
+    width:min(320px, 100%);
   }
 
   header .actions select{
-    width: 100%;
-    min-width: 0;
+    width:100%;
+    min-width:0;
   }
 
   header .actions button{
-    width: 100%;
-    white-space: nowrap;
+    width:100%;
+    white-space:nowrap;
   }
 }
 
+/* =========================================================
+   NAV + KPIs – Mobile
+========================================================= */
 @media (max-width: 700px){
   .nav{
-    position: sticky;
-    top: 10px;
-    z-index: 50;
+    position:sticky;
+    top:10px;
+    z-index:50;
 
-    padding: 10px;
-    margin-top: 10px;
-    border-radius: 16px;
+    padding:10px;
+    margin-top:10px;
+    border-radius:16px;
 
-    background: rgba(255,255,255,.95);
-    border: 1px solid var(--border);
-    box-shadow: 0 10px 24px rgba(2,6,23,.08);
+    background:rgba(255,255,255,.95);
+    border:1px solid var(--border);
+    box-shadow:0 10px 24px rgba(2,6,23,.08);
 
-    /* vira GRID */
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr)); /* 3 colunas */
-    gap: 10px;
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:10px;
   }
 
   .nav a{
-    width: 100%;
-    text-align: center;
-    padding: 10px 0;
+    width:100%;
+    text-align:center;
+    padding:10px 0;
 
-    /* evita esmagar texto */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
   }
-  /* ===== KPIs / Resumo do mês (mobile) ===== */
-  /* garante 2 colunas e cards mais largos */
+
+  /* KPIs: 2 colunas */
   #kpis{
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 10px;
+    gap:10px;
   }
 
-  /* se algum wrapper estiver apertando, isso ajuda */
   #kpis .card{
-    min-width: 0;
-    padding: 14px;
+    min-width:0;
+    padding:14px;
   }
 
+  /* 5º card ocupa linha toda */
   #kpis .card:nth-child(5){
     grid-column: 1 / -1;
   }
 
-  /* impede "R$" e número quebrarem em várias linhas */
+  /* evita quebra do valor */
   #kpis .kpi .value{
-    white-space: nowrap;       /* NÃO quebra linha */
-    word-break: normal;
-    overflow: hidden;
-    text-overflow: ellipsis;   /* se for muito grande, vira ... */
-    font-size: 20px;           /* um pouco menor no mobile */
+    white-space:nowrap;
+    word-break:normal;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    font-size:20px;
   }
 
-  /* textos menores também */
   #kpis .kpi .label{
-    font-size: 12px;
+    font-size:12px;
   }
 }
 
-/* bem pequeno: 2 colunas */
+/* =========================================================
+   CATEGORIAS DO MÊS – Corrige vazamento (mobile e geral)
+========================================================= */
+#categoriesSummary,
+#cardCategories{
+  overflow:hidden;
+}
+
+#categoriesSummary *,
+#cardCategories *{
+  min-width:0;
+}
+
+#categoriesSummary .right,
+#cardCategories .right{
+  white-space:normal !important;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+
+#categoriesSummary [style*="display:flex"],
+#cardCategories [style*="display:flex"]{
+  flex-wrap:wrap;
+}
+
+@media (max-width: 520px){
+  #categoriesSummary [style*="display:flex"],
+  #cardCategories [style*="display:flex"]{
+    gap:8px !important;
+  }
+
+  /* sobrescreve min-width inline do JS */
+  #categoriesSummary [style*="min-width:180px"],
+  #cardCategories [style*="min-width:180px"]{
+    min-width:0 !important;
+    width:100%;
+  }
+
+  #categoriesSummary [style*="min-width:120px"],
+  #cardCategories [style*="min-width:120px"]{
+    min-width:0 !important;
+    width:100%;
+    text-align:left !important;
+  }
+}
+
+/* =========================================================
+   EXTRA SMALL
+========================================================= */
 @media (max-width: 420px){
   .nav{
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -204,6 +271,6 @@
   }
 
   #kpis .kpi .value{
-    font-size: 22px; /* como fica 1 coluna, pode voltar maior */
+    font-size:22px;
   }
 }
