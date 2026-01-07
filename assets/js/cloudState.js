@@ -1,13 +1,10 @@
-// assets/js/cloudState.js
 import { supabase } from "./supabaseClient.js";
 
 const TABLE = "finance_state";
 
-// Busca o state do usuário logado
 export async function pullStateFromCloud() {
-  const { data: sess } = await supabase.auth.getSession();
-  const user = sess?.session?.user;
-  if (!user) return null;
+  const { data: { user }, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !user) return null;
 
   const { data, error } = await supabase
     .from(TABLE)
@@ -23,11 +20,9 @@ export async function pullStateFromCloud() {
   return data?.state || null;
 }
 
-// Salva (upsert) o state do usuário logado
 export async function pushStateToCloud(state) {
-  const { data: sess } = await supabase.auth.getSession();
-  const user = sess?.session?.user;
-  if (!user) return;
+  const { data: { user }, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !user) return false;
 
   const payload = {
     user_id: user.id,
@@ -39,5 +34,10 @@ export async function pushStateToCloud(state) {
     .from(TABLE)
     .upsert(payload, { onConflict: "user_id" });
 
-  if (error) console.error("pushStateToCloud error:", error);
+  if (error) {
+    console.error("pushStateToCloud error:", error);
+    return false;
+  }
+
+  return true;
 }
