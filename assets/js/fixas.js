@@ -75,6 +75,8 @@ const dueErr = document.getElementById("dueDayError");
 const categoryErr = document.getElementById("categoryError");
 
 const addBtn = document.getElementById("addFixedBtn");
+const cancelEditBtn = document.getElementById("cancelEditBtn");
+
 const importPrevBtn = document.getElementById("importPrevBtn");
 const importPrevHint = document.getElementById("importPrevHint");
 
@@ -84,7 +86,7 @@ const summaryCats = document.getElementById("summaryCats");
 const emptyBox = document.getElementById("fixedEmpty");
 const tableEl = document.getElementById("table");
 
-// monta o select de categoria (se quiser manter as opções do HTML, pode remover esse bloco)
+// monta o select de categoria
 if (categorySelect){
   categorySelect.innerHTML = CATEGORIES.map(c => `<option value="${c.key}">${c.label}</option>`).join("");
   categorySelect.value = "outros";
@@ -125,7 +127,6 @@ function validateAll(show){
   return ok;
 }
 
-// ✅ (AQUI É O QUE FALTAVA NO SEU ARQUIVO)
 // revalida enquanto digita/seleciona para liberar o botão
 function wireValidation(){
   const recheck = () => validateAll(false);
@@ -138,7 +139,6 @@ function wireValidation(){
   loanPartsInput?.addEventListener("input", recheck);
   loanStartYmInput?.addEventListener("change", recheck);
 
-  // se quiser: ao sair do campo, mostra erro se estiver errado
   descInput?.addEventListener("blur", () => validateAll(true));
   valorInput?.addEventListener("blur", () => validateAll(true));
   dueDayInput?.addEventListener("blur", () => validateAll(true));
@@ -159,6 +159,147 @@ function calcRemaining(ymSelected, startYm, totalParts){
   return String((endIdx - curIdx) + 1);
 }
 
+// ------------------ ✅ Reordenar + Editar ------------------
+let editingId = null;
+
+function resetForm(){
+  if(descInput) descInput.value = "";
+  if(valorInput) valorInput.value = "";
+  if(dueDayInput) dueDayInput.value = "";
+  if(categorySelect) categorySelect.value = "outros";
+  if(loanPartsInput) loanPartsInput.value = "";
+  if(loanStartYmInput) loanStartYmInput.value = "";
+
+  editingId = null;
+  if(addBtn) addBtn.textContent = "Adicionar";
+  if(cancelEditBtn) cancelEditBtn.style.display = "none";
+
+  clearAllErrors();
+  validateAll(false);
+}
+
+function arrayMoveById(list, draggedId, targetId){
+  const from = list.findIndex(x => x.id === draggedId);
+  const to   = list.findIndex(x => x.id === targetId);
+  if(from < 0 || to < 0 || from === to) return;
+
+  const [item] = list.splice(from, 1);
+  list.splice(to, 0, item);
+}
+
+function wireDragDrop(tbodyEl, list, onChange){
+  if(!tbodyEl) return;
+
+  let draggedId = null;
+
+  tbodyEl.querySelectorAll("tr[data-id]").forEach(tr => {
+    tr.setAttribute("draggable", "true");
+
+    tr.addEventListener("dragstart", (e) => {
+    const tag = (e.target?.tagName || "").toLowerCase();
+    if(tag === "button" || tag === "input" || tag === "select" || tag === "a") {
+      e.preventDefault();
+      return;
+    }
+    draggedId = tr.dataset.id;
+      tr.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+    });
+
+    tr.addEventListener("dragend", () => {
+      tr.classList.remove("dragging");
+      draggedId = null;
+      tbodyEl.querySelectorAll("tr.over").forEach(x => x.classList.remove("over"));
+    });
+
+    tr.addEventListener("dragover", (e) => {
+      e.preventDefault(); // necessário pro drop funcionar
+      e.dataTransfer.dropEffect = "move";
+      tr.classList.add("over");
+    });
+
+    tr.addEventListener("dragleave", () => {
+      tr.classList.remove("over");
+    });
+
+    tr.addEventListener("drop", (e) => {
+      e.preventDefault();
+      tr.classList.remove("over");
+      const targetId = tr.dataset.id;
+
+      if(!draggedId || !targetId || draggedId === targetId) return;
+
+      arrayMoveById(list, draggedId, targetId);
+      onChange?.();
+    });
+  });
+}
+
+let pendingDeleteId = null;
+let pendingDeleteTimer = null;
+
+function markDeletePending(id){
+  pendingDeleteId = id;
+  clearTimeout(pendingDeleteTimer);
+  pendingDeleteTimer = setTimeout(() => {
+    pendingDeleteId = null;
+    render(); // remove visual
+  }, 2500); // 2.5s pra confirmar
+}
+
+tbody?.addEventListener("click", (e) => {
+  const btn = e.target.closest("button");
+  if(!btn) return;
+
+  const id = btn.dataset.id;
+  if(!id) return;
+
+  // EDITAR
+  if(btn.classList.contains("edit")){
+    const it = month.fixed.find(x => x.id === id);
+    if(!it) return;
+
+    editingId = id;
+
+    descInput.value = it.name || "";
+    valorInput.value = it.value ?? "";
+    dueDayInput.value = it.dueDay ?? "";
+    categorySelect.value = it.category || "outros";
+    loanPartsInput.value = it.loanParts ?? "";
+    loanStartYmInput.value = it.loanStartYm ?? "";
+
+    if(addBtn) addBtn.textContent = "Salvar edição";
+    if(cancelEditBtn) cancelEditBtn.style.display = "inline-block";
+
+    clearAllErrors();
+    validateAll(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
+
+  // EXCLUIR
+  if(btn.classList.contains("del")){
+  // se não estiver pendente, marca e exige 2º clique
+  if(pendingDeleteId !== id){
+    markDeletePending(id);
+    render();
+    return;
+  }
+
+  // 2º clique confirma
+  pendingDeleteId = null;
+  clearTimeout(pendingDeleteTimer);
+
+  if(editingId === id) resetForm();
+
+  month.fixed = month.fixed.filter(x => x.id !== id);
+  saveState(state);
+  render();
+  validateAll(false);
+  return;
+}
+});
+
 // ------------------ render ------------------
 function render(){
   const hasItems = (month.fixed || []).length > 0;
@@ -166,27 +307,34 @@ function render(){
   if (emptyBox) emptyBox.style.display = hasItems ? "none" : "flex";
   if (tableEl) tableEl.style.display = hasItems ? "table" : "none";
 
-  tbody.innerHTML = (month.fixed || []).map(item => {
-    const end = (item.loanStartYm && item.loanParts) ? calcEndYm(item.loanStartYm, item.loanParts) : "";
-    const faltam = (item.loanStartYm && item.loanParts) ? calcRemaining(ym, item.loanStartYm, item.loanParts) : "";
+  tbody.innerHTML = (month.fixed || []).map((item) => {
+  const end = (item.loanStartYm && item.loanParts) ? calcEndYm(item.loanStartYm, item.loanParts) : "";
+  const faltam = (item.loanStartYm && item.loanParts) ? calcRemaining(ym, item.loanStartYm, item.loanParts) : "";
 
-    return `
-      <tr>
-        <td>${item.name}</td>
-        <td>${catLabel(item.category)}</td>
-        <td>Dia ${item.dueDay}</td>
-        <td class="right">${formatBRL(item.value)}</td>
-        <td>${end ? ymToLabel(end) : "—"}</td>
-        <td>${faltam ? faltam : "—"}</td>
-        <td style="text-align:center;">
-          <input type="checkbox" ${item.paid ? "checked":""} data-id="${item.id}" class="paid"/>
-        </td>
-        <td class="right">
-          <button data-id="${item.id}" class="del">Excluir</button>
-        </td>
-      </tr>
-    `;
-  }).join("");
+  return `
+    <tr data-id="${item.id}">
+      <td>${item.name}</td>
+      <td>${catLabel(item.category)}</td>
+      <td>Dia ${item.dueDay}</td>
+      <td class="right">${formatBRL(item.value)}</td>
+      <td>${end ? ymToLabel(end) : "—"}</td>
+      <td>${faltam ? faltam : "—"}</td>
+      <td style="text-align:center;">
+        <input type="checkbox" ${item.paid ? "checked":""} data-id="${item.id}" class="paid"/>
+      </td>
+      <td class="right">
+        <button class="icon-btn edit" data-tip="Editar" data-id="${item.id}" aria-label="Editar">
+          <img src="assets/img/icons/edit.png" alt="Editar">
+        </button>
+        <button class="icon-btn del ${pendingDeleteId === item.id ? "danger" : ""}"
+                data-tip="${pendingDeleteId === item.id ? "Clique novamente para excluir" : "Excluir"}"
+                data-id="${item.id}" aria-label="Excluir">
+          <img src="assets/img/icons/delete.png" alt="Excluir">
+        </button>
+      </td>
+    </tr>
+  `;
+}).join("");
 
   const total = (month.fixed || []).reduce((a,b)=> a + Number(b.value||0), 0);
   if (summary) summary.innerHTML = `📅 ${ymToLabel(ym)} • Total fixas: <b>${formatBRL(total)}</b>`;
@@ -203,6 +351,7 @@ function render(){
       .join("<br>");
   }
 
+  // pago?
   tbody.querySelectorAll(".paid").forEach(chk=>{
     chk.addEventListener("change", ()=>{
       const it = month.fixed.find(x=> x.id === chk.dataset.id);
@@ -213,13 +362,9 @@ function render(){
     });
   });
 
-  tbody.querySelectorAll(".del").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      month.fixed = month.fixed.filter(x=> x.id !== btn.dataset.id);
-      saveState(state);
-      render();
-      validateAll(false);
-    });
+    wireDragDrop(tbody, month.fixed, () => {
+    saveState(state);
+    render();
   });
 }
 
@@ -282,13 +427,12 @@ monthSelect?.addEventListener("change", () => {
   month.fixed = Array.isArray(month.fixed) ? month.fixed : [];
   saveState(state);
 
-  clearAllErrors();
-  validateAll(false);
+  resetForm();
   updateImportHint();
   render();
 });
 
-// ------------------ adicionar ------------------
+// ------------------ adicionar / salvar edição ------------------
 addBtn?.addEventListener("click", ()=>{
   if(!validateAll(true)) return;
 
@@ -303,25 +447,34 @@ addBtn?.addEventListener("click", ()=>{
   const loanStartYmRaw = (loanStartYmInput?.value || "").trim();
   const loanStartYm = loanStartYmRaw ? loanStartYmRaw : null;
 
-  month.fixed.push({ id: uid(), name, value, dueDay, paid:false, category, loanParts, loanStartYm });
+  if(editingId){
+    const it = month.fixed.find(x => x.id === editingId);
+    if(it){
+      it.name = name;
+      it.value = value;
+      it.dueDay = dueDay;
+      it.category = category;
+      it.loanParts = loanParts;
+      it.loanStartYm = loanStartYm;
+      // paid mantém como está
+    }
+  } else {
+    month.fixed.push({ id: uid(), name, value, dueDay, paid:false, category, loanParts, loanStartYm });
+  }
+
   saveState(state);
-
-  descInput.value = "";
-  valorInput.value = "";
-  dueDayInput.value = "";
-  if(categorySelect) categorySelect.value = "outros";
-  if(loanPartsInput) loanPartsInput.value = "";
-  if(loanStartYmInput) loanStartYmInput.value = "";
-
-  clearAllErrors();
-  validateAll(false);
+  resetForm();
   updateImportHint();
   render();
 });
 
+// cancelar edição
+cancelEditBtn?.addEventListener("click", ()=>{
+  resetForm();
+});
+
 // init
-wireValidation();     // ✅ liga a validação dinâmica (isso resolve seu “apagado”)
-clearAllErrors();
-validateAll(false);
+wireValidation();
+resetForm();
 updateImportHint();
 render();

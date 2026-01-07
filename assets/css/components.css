@@ -119,3 +119,50 @@ input.invalid{
   -webkit-overflow-scrolling: touch;
   border-radius: 12px;
 }
+
+/* =========================
+   Drag & Drop estilo
+========================= */
+tr.dragging { opacity: .5; }
+tr.over { outline: 2px dashed rgba(37,99,235,.6); outline-offset: -4px; }
+tr[draggable="true"] { cursor: grab; }
+tr.dragging { cursor: grabbing; }
+
+.icon-btn{
+  width: 40px;
+  height: 38px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: 1px solid rgba(0,0,0,.08);
+  cursor: pointer;
+  transition: background .12s ease, transform .12s ease;
+}
+
+.icon-btn.danger{
+  border-color: rgba(239,68,68,.5);
+  background: rgba(239,68,68,.12);
+}
+
+.icon-btn img{
+  width: 18px;
+  height: 18px;
+  pointer-events: none; /* evita conflito com drag/click */
+}
+
+.icon-btn:hover{
+  background: rgba(0,0,0,.05);
+  transform: scale(1.05);
+}
+
+/* opcional: destaque por ação */
+.icon-btn.del:hover{
+  background: rgba(239,68,68,.12); /* vermelho suave */
+}
+
+.icon-btn.edit:hover{
+  background: rgba(100,116,139,.12); /* cinza elegante */
+}

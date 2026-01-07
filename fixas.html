@@ -62,18 +62,7 @@
 
           <!-- Categoria -->
           <div class="field">
-            <select id="categorySelect">
-              <option value="">📌 Categoria</option>
-              <option value="alimentacao">🍔 Alimentação</option>
-              <option value="farmacia">💊 Farmácia</option>
-              <option value="transporte">🚗 Transporte</option>
-              <option value="casa">🏠 Casa</option>
-              <option value="internet">📶 Internet/Telefone</option>
-              <option value="energia">⚡ Energia</option>
-              <option value="assinaturas">🎬 Assinaturas</option>
-              <option value="emprestimo">💳 Empréstimo</option>
-              <option value="outros">📌 Outros</option>
-            </select>
+            <select id="categorySelect"></select>
             <small id="categoryError" class="field-error"></small>
           </div>
 
@@ -93,6 +82,7 @@
         <!-- Botões -->
         <div class="fixas-actions">
           <button id="addFixedBtn" type="button" class="primary">Adicionar</button>
+          <button id="cancelEditBtn" type="button" class="btn-danger" style="display:none;">Cancelar edição</button>
           <button id="importPrevBtn" type="button" class="blue">Importar mês anterior</button>
         </div>
 
@@ -102,7 +92,6 @@
           Dica: selecione a categoria. Se for <b>Empréstimo</b>, preencha “Parcelas” e “Início” para calcular “Termina” e “Faltam”.
         </div>
       </div>
-      <!-- ✅ FECHA o card "Adicionar fixa" aqui -->
 
       <!-- Card: Resumo -->
       <div class="card">

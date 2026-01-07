@@ -24,7 +24,6 @@
       <div class="actions">
         <select id="monthSelect"></select>
         <button id="exportCsv" class="blue">Exportar CSV</button>
-        <!-- ADD -->
         <button id="logoutBtn" class="btn-danger">Sair</button>
       </div>
     </header>
@@ -47,7 +46,6 @@
           <small id="nameError" class="field-error"></small>
         </div>
 
-        <!-- categoria estilo Fixas -->
         <div class="field">
           <select id="category"></select>
           <small id="categoryError" class="field-error"></small>
@@ -69,9 +67,8 @@
         </div>
 
         <button class="primary" id="add" disabled>Adicionar</button>
-
-        <!-- cartão do mês anterior (parcelas + assinaturas) -->
-        <button class="blue" id="copyPrevCard">Importar mês anterior</button>
+        <button class="btn-danger" id="cancelEditPart" style="display:none;">Cancelar edição</button>
+        <button class="blue" id="copyPrevCard">Copiar cartão do mês anterior</button>
       </div>
 
       <div class="helper">
@@ -110,7 +107,6 @@
           <small id="recNameError" class="field-error"></small>
         </div>
 
-        <!-- categoria estilo Fixas -->
         <div class="field">
           <select id="recCategory"></select>
           <small id="recCategoryError" class="field-error"></small>
@@ -122,6 +118,7 @@
         </div>
 
         <button class="primary" id="addRecurring" disabled>Adicionar</button>
+        <button class="btn-danger" id="cancelEditRec" style="display:none;">Cancelar edição</button>
       </div>
 
       <div class="helper">Essas entradas entram no total do cartão do mês. Você pode desativar quando cancelar.</div>
