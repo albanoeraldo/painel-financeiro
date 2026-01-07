@@ -1,8 +1,9 @@
-import { initHeader, getSelectedMonth } from "./ui.js";
+import { initHeader, renderUserName, getSelectedMonth } from "./ui.js";
 import { loadState, formatBRL, ymToLabel } from "./storage.js";
 import { pullStateFromCloud } from "./cloudState.js";
 
 await initHeader("ano");
+await renderUserName();
 
 // puxa nuvem e joga no local antes de renderizar
 const cloud = await pullStateFromCloud();

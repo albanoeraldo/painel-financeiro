@@ -1,9 +1,10 @@
-import { initHeader, getSelectedMonth, requireAuth } from "./ui.js";
+import { initHeader, renderUserName, getSelectedMonth, requireAuth } from "./ui.js";
 import { loadState, saveState, ensureMonth, uid, formatBRL, ymToLabel } from "./storage.js";
 import { pullStateFromCloud } from "./cloudState.js";
 
 await requireAuth();          // ✅ primeiro autentica
 await initHeader("fixas");    // ✅ depois monta header/calendário
+await renderUserName();
 
 // ------------------ helpers mês anterior (sem depender de export do storage) ------------------
 function ymToIndex(ymStr){

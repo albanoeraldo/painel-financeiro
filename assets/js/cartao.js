@@ -1,9 +1,10 @@
-import { initHeader, getSelectedMonth } from "./ui.js";
+import { initHeader, renderUserName, getSelectedMonth } from "./ui.js";
 import { loadState, saveState, ensureMonth, uid, formatBRL, ymToLabel } from "./storage.js";
 import { createValidator } from "./validate.js";
 import { pullStateFromCloud } from "./cloudState.js";
 
 await initHeader("cartao");
+await renderUserName();
 
 // ✅ Puxa do Supabase e grava no localStorage antes de usar state/month
 const cloud = await pullStateFromCloud();
