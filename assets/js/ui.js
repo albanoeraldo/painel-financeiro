@@ -1,6 +1,22 @@
 import { loadState, saveState, ensureMonth, ymToLabel } from "./storage.js";
 import { supabase } from "./supabaseClient.js";
 
+export async function renderUserName(){
+  const { data } = await supabase.auth.getUser();
+  const user = data?.user;
+
+  const name =
+    user?.user_metadata?.name ||
+    user?.email?.split("@")[0] ||
+    "Usuário";
+
+  const el = document.getElementById("userName");
+  if(el) el.textContent = name;
+
+  const av = document.getElementById("userAvatar");
+  if(av) av.textContent = (name.trim()[0] || "U").toUpperCase();
+}
+
 export function currentYm(){
   const d = new Date();
   const y = d.getFullYear();

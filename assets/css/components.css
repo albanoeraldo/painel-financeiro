@@ -166,3 +166,30 @@ tr.dragging { cursor: grabbing; }
 .icon-btn.edit:hover{
   background: rgba(100,116,139,.12); /* cinza elegante */
 }
+
+/* ===== User pill (header) ===== */
+.user-pill{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.85);
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1;
+  box-shadow: 0 6px 16px rgba(2,6,23,.06);
+}
+
+.user-avatar{
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(37,99,235,.14);
+  color: rgba(37,99,235,.95);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 12px;
+}
