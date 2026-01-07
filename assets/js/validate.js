@@ -1,4 +1,3 @@
-// assets/js/validate.js
 export function createValidator({ showOn = "submit" } = {}) {
   let showMsg = showOn === "input"; // se "input", valida mostrando ao digitar
 

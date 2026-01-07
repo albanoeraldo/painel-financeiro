@@ -1,4 +1,3 @@
-// assets/js/storage.js
 const KEY = "albano_financas_v1";
 
 import { pushStateToCloud } from "./cloudState.js";
