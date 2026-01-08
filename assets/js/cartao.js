@@ -23,6 +23,9 @@ saveState(state);
 // --- elements ---
 const monthSelect = document.getElementById("monthSelect");
 
+// ✅ botão copiar mês anterior (PRECISA existir no HTML)
+const importPrevBtn = document.getElementById("importPrevBtn");
+
 // parcelas
 const nameInput = document.getElementById("name");
 const categorySelect = document.getElementById("category");
@@ -59,12 +62,31 @@ const recTotalEl = document.getElementById("recurringTotal");
 const cardCategoriesEl = document.getElementById("cardCategories");
 const cardCategoriesHintEl = document.getElementById("cardCategoriesHint");
 
-// --- validator (igual fixas: showMsg só depois do submit) ---
+// --- validator ---
 const v = createValidator({ showOn: "submit" });
 
 function clearErr(input, errEl) {
   input?.classList.remove("invalid");
   if (errEl) errEl.textContent = "";
+}
+
+/* =========================
+   Helpers mês anterior
+========================= */
+function ymToIndex(ymStr) {
+  const [y, m] = String(ymStr).split("-").map(Number);
+  return y * 12 + (m - 1);
+}
+function indexToYm(idx) {
+  const y = Math.floor(idx / 12);
+  const m = String((idx % 12) + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+function addMonthsLocal(ymStr, plus) {
+  return indexToYm(ymToIndex(ymStr) + plus);
+}
+function getPrevYm(curYm) {
+  return addMonthsLocal(curYm, -1);
 }
 
 /* =========================
@@ -92,7 +114,6 @@ function ensureCategoryExistsInList(cat) {
   const exists = CATEGORY_LIST.some((x) => x.key === t);
   if (exists) return;
 
-  // adiciona antes do "Outros"
   CATEGORY_LIST.splice(CATEGORY_LIST.length - 1, 0, { key: t, icon: "🏷️", label: t });
   ICON_BY_CATEGORY[t] = "🏷️";
 }
@@ -100,11 +121,10 @@ function ensureCategoryExistsInList(cat) {
 function fillCategorySelect(selectEl, defaultValue = "Outros") {
   if (!selectEl) return;
 
-  // garante categorias de itens existentes (caso tenha dados antigos/custom)
   (month.card || []).forEach((it) => ensureCategoryExistsInList(it.category));
   (month.cardRecurring || []).forEach((it) => ensureCategoryExistsInList(it.category));
 
-  const current = (selectEl.value || defaultValue || "Outros");
+  const current = selectEl.value || defaultValue || "Outros";
 
   selectEl.innerHTML = CATEGORY_LIST.map((c) => {
     const text = `${c.icon} ${c.label}`;
@@ -132,7 +152,6 @@ function ruleCategory() {
 function ruleMonthValue() {
   return v.numberMin(monthValueInput, monthValueErr, 0.01, "Informe um valor maior que 0.");
 }
-// opcionais: só valida se preencher
 function ruleTotalPartsOptional() {
   const raw = (totalPartsInput?.value || "").trim();
   if (!raw) {
@@ -195,15 +214,6 @@ recValueInput?.addEventListener("input", liveValidateRecurring);
 /* =========================
    Helpers de data
 ========================= */
-function ymToIndex(ymStr) {
-  const [y, m] = ymStr.split("-").map(Number);
-  return y * 12 + (m - 1);
-}
-function indexToYm(idx) {
-  const y = Math.floor(idx / 12);
-  const m = String((idx % 12) + 1).padStart(2, "0");
-  return `${y}-${m}`;
-}
 function addMonths(ymStr, plus) {
   return indexToYm(ymToIndex(ymStr) + plus);
 }
@@ -218,7 +228,7 @@ function calcRemaining(ymSelected, startYm, totalParts) {
   const endIdx = ymToIndex(endYm);
 
   if (curIdx > endIdx) return "0";
-  return String((endIdx - curIdx) + 1);
+  return String(endIdx - curIdx + 1);
 }
 
 /* =========================
@@ -285,7 +295,7 @@ function wireDragDrop(tbodyEl, list, onChange) {
    Confirmação de exclusão (2 cliques)
 ========================= */
 let pendingDeleteCardId = null; // parcelas
-let pendingDeleteRecId = null;  // assinaturas
+let pendingDeleteRecId = null; // assinaturas
 let pendingDeleteTimer = null;
 
 function markDeletePending(which, id) {
@@ -516,7 +526,7 @@ tbody?.addEventListener("click", (e) => {
     if (!it) return;
 
     nameInput.value = it.name || "";
-    if (categorySelect) categorySelect.value = (it.category || "Outros").trim() || "Outros";
+    categorySelect.value = (it.category || "Outros").trim() || "Outros";
     monthValueInput.value = it.monthValue ?? "";
     totalPartsInput.value = it.totalParts ?? "";
     startYmInput.value = it.startYm ?? "";
@@ -552,7 +562,6 @@ tbody?.addEventListener("click", (e) => {
     month.card = month.card.filter((x) => x.id !== id);
     saveState(state);
 
-    // se deletou o que estava editando, reseta
     if (addBtn.dataset.editingId === id) resetEditPart();
 
     renderAll();
@@ -574,7 +583,7 @@ recTbody?.addEventListener("click", (e) => {
     if (!it) return;
 
     recNameInput.value = it.name || "";
-    if (recCategorySelect) recCategorySelect.value = (it.category || "Outros").trim() || "Outros";
+    recCategorySelect.value = (it.category || "Outros").trim() || "Outros";
     recValueInput.value = it.value ?? "";
 
     addRecurringBtn.textContent = "Salvar edição";
@@ -654,6 +663,71 @@ monthSelect?.addEventListener("change", () => {
 // Cancelar edição (separado)
 cancelEditPartBtn?.addEventListener("click", () => resetEditPart());
 cancelEditRecBtn?.addEventListener("click", () => resetEditRec());
+
+// ✅ COPIAR CARTÃO DO MÊS ANTERIOR (parcelas + assinaturas, sem duplicar)
+importPrevBtn?.addEventListener("click", () => {
+  const prevYm = getPrevYm(ym);
+  const prevMonth = ensureMonth(state, prevYm);
+
+  prevMonth.card = Array.isArray(prevMonth.card) ? prevMonth.card : [];
+  prevMonth.cardRecurring = Array.isArray(prevMonth.cardRecurring) ? prevMonth.cardRecurring : [];
+
+  if (!prevMonth.card.length && !prevMonth.cardRecurring.length) {
+    alert(`Não encontrei cartão em ${ymToLabel(prevYm)}.`);
+    return;
+  }
+
+  let added = 0;
+
+  // evita duplicar parcelas pelo nome
+  const existingParts = new Set((month.card || []).map((x) => (x.name || "").trim().toLowerCase()));
+
+  prevMonth.card.forEach((it) => {
+    const key = (it.name || "").trim().toLowerCase();
+    if (!key || existingParts.has(key)) return;
+
+    month.card.push({
+      id: uid(),
+      name: it.name,
+      category: (it.category || "Outros").trim() || "Outros",
+      monthValue: Number(it.monthValue || 0),
+      totalParts: it.totalParts ?? null,
+      startYm: it.startYm ?? null,
+    });
+
+    existingParts.add(key);
+    added++;
+  });
+
+  // evita duplicar assinaturas
+  const existingRec = new Set((month.cardRecurring || []).map((x) => (x.name || "").trim().toLowerCase()));
+
+  prevMonth.cardRecurring.forEach((it) => {
+    const key = (it.name || "").trim().toLowerCase();
+    if (!key || existingRec.has(key)) return;
+
+    month.cardRecurring.push({
+      id: uid(),
+      name: it.name,
+      category: (it.category || "Outros").trim() || "Outros",
+      value: Number(it.value || 0),
+      active: it.active !== false,
+    });
+
+    existingRec.add(key);
+    added++;
+  });
+
+  saveState(state);
+  fillCategorySelect(categorySelect, "Outros");
+  fillCategorySelect(recCategorySelect, "Outros");
+
+  resetEditPart();
+  resetEditRec();
+  renderAll();
+
+  alert(`✅ Copiado de ${ymToLabel(prevYm)}: ${added} item(ns)`);
+});
 
 // adicionar / salvar edição (parcela)
 addBtn?.addEventListener("click", () => {
