@@ -72,8 +72,7 @@
     grid-template-columns: 2.2fr 0.9fr 0.7fr 1.2fr 0.5fr 1.3fr;
   }
 
-  #addFixedBtn,
-  #importPrevBtn{
+  #addFixedBtn, #add, #importPrevBtn{
     width:100%;
   }
 }
