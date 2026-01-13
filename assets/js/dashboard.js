@@ -192,13 +192,16 @@ function calcTotals(m){
 
   const goals = sum((m.goals || []).map(x => x.saved));
 
-  const incomeBase = Number(m.incomeBase || 0);
+  const incomeBase  = Number(m.incomeBase || 0);
   const incomeExtra = (m.incomeExtra || []).reduce((a,b)=> a + Number(b.value || 0), 0);
-  const income = incomeBase + incomeExtra;
+  const income      = incomeBase + incomeExtra;
 
-  // ✅ NOVO: dashboard considera FIXAS PENDENTES (não pagas)
+  // ✅ Falta pagar muda conforme você marca "pago?"
   const despesasPendentes = fixedPending + card + goals;
-  const saldo = income - despesasPendentes;
+
+  // ✅ Saldo NÃO muda ao pagar fixas (usa o plano do mês)
+  const despesasPlanejadas = fixedTotal + card + goals;
+  const saldo = income - despesasPlanejadas;
 
   return {
     fixedTotal,
@@ -209,8 +212,9 @@ function calcTotals(m){
     incomeBase,
     incomeExtra,
     income,
-    despesasPendentes,
-    saldo
+    despesasPendentes,      // "Falta pagar (mês)"
+    despesasPlanejadas,     // opcional (se quiser usar depois)
+    saldo                   // "Saldo (sobra/falta)" travado
   };
 }
 
