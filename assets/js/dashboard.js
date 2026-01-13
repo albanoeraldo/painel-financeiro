@@ -144,10 +144,6 @@ function totalsByCategoryFixed(m){
   return { mapTotal, mapPending };
 }
 
-/**
- * ✅ NOVO: soma por categoria das despesas do mês
- * (Fixas PENDENTES + Cartão (parcelas + assinaturas ativas))
- */
 function totalsByCategoryExpenses(m){
   const mapTotal = {}; // total por categoria das despesas do mês (pendentes + cartão)
   const mapPending = {}; // pendente por categoria (aqui só faz sentido para Fixas)
