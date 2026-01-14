@@ -41,7 +41,7 @@ function fixasMes(m){
   return sum(m.fixed.map(x => x.value));
 }
 
-// ✅ cartão = parcelas + assinaturas ativas
+// cartão = parcelas + assinaturas ativas
 function cartaoMes(m){
   m = normalizeMonth(m);
   const parts = sum(m.card.map(x => x.monthValue));

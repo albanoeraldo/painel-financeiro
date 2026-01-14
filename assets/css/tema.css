@@ -21,7 +21,6 @@
   --radius: 16px;
 }
 
-/* fundo com “profundidade” leve */
 body{
   background:
     radial-gradient(900px 500px at 20% 0%, rgba(37,99,235,.08), transparent 60%),
@@ -29,18 +28,15 @@ body{
     var(--bg);
 }
 
-/* container mais “pro” */
 .container{
   max-width: 1120px;
   padding: 22px;
 }
 
-/* header alinhado e com respiro */
 header{
   margin-bottom: 18px;
 }
 
-/* brand */
 .brand h1{
   font-size: 22px;
   font-weight: 800;
@@ -51,7 +47,7 @@ header{
   color: var(--muted);
 }
 
-/* navegação com estilo mais suave */
+/* navegação */
 .nav a{
   border: 1px solid var(--border);
   background: rgba(255,255,255,.80);
@@ -67,7 +63,7 @@ header{
   color: var(--blue);
 }
 
-/* card premium */
+/* card */
 .card{
   padding: 16px;
   border: 1px solid var(--border);
@@ -77,12 +73,12 @@ header{
   box-shadow: var(--shadow-hover);
 }
 
-/* grid com mais respiro */
+/* grid */
 .grid{
   gap: 16px;
 }
 
-/* KPI mais elegante */
+/* KPI */
 .kpi{
   border-left: 4px solid rgba(37,99,235,.35);
 }
@@ -98,7 +94,7 @@ header{
   margin-top: 8px;
 }
 
-/* inputs melhores */
+/* inputs */
 input, select{
   border: 1px solid var(--border);
   background: rgba(255,255,255,.92);
@@ -110,7 +106,7 @@ input:focus, select:focus{
   box-shadow: 0 0 0 4px rgba(37,99,235,.10);
 }
 
-/* botões padronizados */
+/* botões */
 button{
   transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
 }
@@ -123,7 +119,7 @@ button:active{
   box-shadow: none;
 }
 
-/* classes (seu projeto já usa) */
+/* classes */
 button.primary, .btn-primary{
   background: var(--green);
   border-color: var(--green);
@@ -154,7 +150,7 @@ button.blue:hover{
   background: rgba(239,68,68,.08);
 }
 
-/* badges mais bonitos */
+/* badges */
 .badge{
   border: 1px solid var(--border);
   background: rgba(255,255,255,.85);
@@ -168,7 +164,7 @@ button.blue:hover{
   border-color: rgba(239,68,68,.30);
 }
 
-/* tabela clean */
+/* tabela */
 .table th{
   font-size: 12px;
   text-transform: uppercase;
@@ -178,7 +174,7 @@ button.blue:hover{
   background: rgba(37,99,235,.03);
 }
 
-/* mobile: deixa o header keeps clean */
+/* mobile */
 @media (max-width: 700px){
   header img{ width: 56px; height: 56px; }
   .brand h1{ font-size: 18px; }

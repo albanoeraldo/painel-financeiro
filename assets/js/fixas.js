@@ -2,11 +2,11 @@ import { initHeader, renderUserName, getSelectedMonth, requireAuth } from "./ui.
 import { loadState, saveState, ensureMonth, uid, formatBRL, ymToLabel } from "./storage.js";
 import { pullStateFromCloud } from "./cloudState.js";
 
-await requireAuth();          // ✅ primeiro autentica
-await initHeader("fixas");    // ✅ depois monta header/calendário
+await requireAuth();          
+await initHeader("fixas");    
 await renderUserName();
 
-// ------------------ helpers mês anterior (sem depender de export do storage) ------------------
+// ------------------ helpers mês anterior ------------------
 function ymToIndex(ymStr){
   const [y, m] = String(ymStr).split("-").map(Number);
   return y * 12 + (m - 1);
@@ -27,11 +27,9 @@ function getPrevYm(curYm){
 const localBefore = loadState();
 const cloud = await pullStateFromCloud();
 
-// ✅ só aplica o cloud se ele tiver meses de verdade
 if (cloud && cloud.months && Object.keys(cloud.months).length > 0) {
   saveState(cloud);
 } else {
-  // mantém o que já estava salvo localmente
   saveState(localBefore);
 }
 
@@ -160,7 +158,7 @@ function calcRemaining(ymSelected, startYm, totalParts){
   return String((endIdx - curIdx) + 1);
 }
 
-// ------------------ ✅ Reordenar + Editar ------------------
+// ------------------ Reordenar + Editar ------------------
 let editingId = null;
 
 function resetForm(){
@@ -214,7 +212,7 @@ function wireDragDrop(tbodyEl, list, onChange){
     });
 
     tr.addEventListener("dragover", (e) => {
-      e.preventDefault(); // necessário pro drop funcionar
+      e.preventDefault();
       e.dataTransfer.dropEffect = "move";
       tr.classList.add("over");
     });
@@ -244,8 +242,8 @@ function markDeletePending(id){
   clearTimeout(pendingDeleteTimer);
   pendingDeleteTimer = setTimeout(() => {
     pendingDeleteId = null;
-    render(); // remove visual
-  }, 2500); // 2.5s pra confirmar
+    render(); 
+  }, 2500); 
 }
 
 tbody?.addEventListener("click", (e) => {
@@ -280,7 +278,6 @@ tbody?.addEventListener("click", (e) => {
 
   // EXCLUIR
   if(btn.classList.contains("del")){
-  // se não estiver pendente, marca e exige 2º clique
   if(pendingDeleteId !== id){
     markDeletePending(id);
     render();

@@ -6,11 +6,11 @@ import { pullStateFromCloud } from "./cloudState.js";
 await initHeader("cartao");
 await renderUserName();
 
-// ✅ Puxa do Supabase e grava no localStorage antes de usar state/month
+// Puxa do Supabase e grava no localStorage antes de usar state/month
 const cloud = await pullStateFromCloud();
 if (cloud) saveState(cloud);
 
-// --- state + month (let pq muda) ---
+// --- state + month ---
 let ym = getSelectedMonth();
 const state = loadState();
 let month = ensureMonth(state, ym);
@@ -23,7 +23,7 @@ saveState(state);
 // --- elements ---
 const monthSelect = document.getElementById("monthSelect");
 
-// ✅ botão copiar mês anterior (PRECISA existir no HTML)
+// botão copiar mês anterior
 const importPrevBtn = document.getElementById("importPrevBtn");
 
 // parcelas
@@ -70,9 +70,7 @@ function clearErr(input, errEl) {
   if (errEl) errEl.textContent = "";
 }
 
-/* =========================
-   Helpers mês anterior
-========================= */
+/* ========================= Helpers mês anterior ========================= */
 function ymToIndex(ymStr) {
   const [y, m] = String(ymStr).split("-").map(Number);
   return y * 12 + (m - 1);
@@ -89,9 +87,7 @@ function getPrevYm(curYm) {
   return addMonthsLocal(curYm, -1);
 }
 
-/* =========================
-   CATEGORIAS (estilo Fixas)
-========================= */
+/* ========================= CATEGORIAS (estilo Fixas) ========================= */
 const CATEGORY_LIST = [
   { key: "Moradia", icon: "🏠", label: "Moradia" },
   { key: "Alimentação", icon: "🍽️", label: "Alimentação" },
@@ -140,9 +136,7 @@ function catLabel(cat) {
   return `${icon} ${c}`;
 }
 
-/* =========================
-   PARCELAS - regras
-========================= */
+/* ========================= PARCELAS - regras ========================= */
 function ruleName() {
   return v.required(nameInput, nameErr, "Informe a compra/descrição.");
 }
@@ -188,9 +182,7 @@ monthValueInput?.addEventListener("input", liveValidateParts);
 totalPartsInput?.addEventListener("input", liveValidateParts);
 startYmInput?.addEventListener("input", liveValidateParts);
 
-/* =========================
-   ASSINATURAS - regras
-========================= */
+/* ========================= ASSINATURAS - regras ========================= */
 function ruleRecName() {
   return v.required(recNameInput, recNameErr, "Informe a descrição da assinatura.");
 }
@@ -211,9 +203,7 @@ recNameInput?.addEventListener("input", liveValidateRecurring);
 recCategorySelect?.addEventListener("change", liveValidateRecurring);
 recValueInput?.addEventListener("input", liveValidateRecurring);
 
-/* =========================
-   Helpers de data
-========================= */
+/* ========================= Helpers de data ========================= */
 function addMonths(ymStr, plus) {
   return indexToYm(ymToIndex(ymStr) + plus);
 }
@@ -231,9 +221,7 @@ function calcRemaining(ymSelected, startYm, totalParts) {
   return String(endIdx - curIdx + 1);
 }
 
-/* =========================
-   Drag & Drop helpers
-========================= */
+/* ========================= Drag & Drop helpers ========================= */
 function arrayMoveById(list, draggedId, targetId) {
   const from = list.findIndex((x) => x.id === draggedId);
   const to = list.findIndex((x) => x.id === targetId);
@@ -291,11 +279,9 @@ function wireDragDrop(tbodyEl, list, onChange) {
   });
 }
 
-/* =========================
-   Confirmação de exclusão (2 cliques)
-========================= */
-let pendingDeleteCardId = null; // parcelas
-let pendingDeleteRecId = null; // assinaturas
+/* ========================= Confirmação de exclusão (2 cliques) ========================= */
+let pendingDeleteCardId = null;
+let pendingDeleteRecId = null; 
 let pendingDeleteTimer = null;
 
 function markDeletePending(which, id) {
@@ -310,9 +296,7 @@ function markDeletePending(which, id) {
   }, 2500);
 }
 
-/* =========================
-   Reset edição (separado)
-========================= */
+/* ========================= Reset edição (separado) ========================= */
 function resetEditPart() {
   nameInput.value = "";
   monthValueInput.value = "";
@@ -351,9 +335,7 @@ function resetEditRec() {
   validateAllRecurring();
 }
 
-/* =========================
-   Totais
-========================= */
+/* ========================= Totais ========================= */
 function totalParcelasMes() {
   return (month.card || []).reduce((a, b) => a + Number(b.monthValue || 0), 0);
 }
@@ -383,9 +365,7 @@ function totalsByCategory() {
     .sort((a, b) => b.total - a.total);
 }
 
-/* =========================
-   Render
-========================= */
+/* ========================= Render ========================= */
 function renderCardCategories() {
   if (!cardCategoriesEl) return;
 
@@ -509,9 +489,7 @@ function renderAll() {
   renderCardCategories();
 }
 
-/* =========================
-   Delegação de eventos
-========================= */
+/* ========================= Delegação de eventos ========================= */
 // Parcelas: editar/excluir
 tbody?.addEventListener("click", (e) => {
   const btn = e.target.closest("button");
@@ -636,9 +614,7 @@ recTbody?.addEventListener("change", (e) => {
   }
 });
 
-/* =========================
-   Eventos
-========================= */
+/* ========================= Eventos ========================= */
 monthSelect?.addEventListener("change", () => {
   ym = getSelectedMonth();
   month = ensureMonth(state, ym);
@@ -660,11 +636,11 @@ monthSelect?.addEventListener("change", () => {
   renderAll();
 });
 
-// Cancelar edição (separado)
+// Cancelar edição
 cancelEditPartBtn?.addEventListener("click", () => resetEditPart());
 cancelEditRecBtn?.addEventListener("click", () => resetEditRec());
 
-// ✅ COPIAR CARTÃO DO MÊS ANTERIOR (parcelas + assinaturas, sem duplicar)
+// COPIAR CARTÃO DO MÊS ANTERIOR
 importPrevBtn?.addEventListener("click", () => {
   const prevYm = getPrevYm(ym);
   const prevMonth = ensureMonth(state, prevYm);
@@ -679,7 +655,6 @@ importPrevBtn?.addEventListener("click", () => {
 
   let added = 0;
 
-  // evita duplicar parcelas pelo nome
   const existingParts = new Set((month.card || []).map((x) => (x.name || "").trim().toLowerCase()));
 
   prevMonth.card.forEach((it) => {
@@ -804,9 +779,7 @@ addRecurringBtn?.addEventListener("click", () => {
   renderAll();
 });
 
-/* =========================
-   Init
-========================= */
+/* ========================= Init ========================= */
 fillCategorySelect(categorySelect, "Outros");
 fillCategorySelect(recCategorySelect, "Outros");
 

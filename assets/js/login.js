@@ -5,7 +5,7 @@ const passInput  = document.getElementById("password");
 const btn        = document.getElementById("loginBtn");
 const errorEl    = document.getElementById("loginError");
 
-// Se já estiver logado → dashboard
+// Se já estiver logado vai dashboard
 const { data } = await supabase.auth.getSession();
 if (data.session) {
   window.location.href = "index.html";

@@ -36,7 +36,7 @@ const savedErr = document.getElementById("savedError");
 const tbody = document.querySelector("#table tbody");
 const totalEl = document.getElementById("total");
 
-// Validator (mesmo padrão do fixas/cartão)
+// Validator
 const v = createValidator({ showOn: "submit" });
 
 function validateAll() {
@@ -44,12 +44,11 @@ function validateAll() {
     [
       () => v.required(nameInput, nameErr, "Informe a meta."),
       () => v.numberMin(targetInput, targetErr, 0.01, "Informe um custo total maior que 0."),
-      // saved é opcional, mas se preencher tem que ser >= 0
       () => {
         const val = (savedInput?.value || "").trim();
         if (!val) {
-          v.setShowMsg(false); // garante que não force erro
-          // limpa (sem vermelho)
+          v.setShowMsg(false);
+          // limpa
           savedInput?.classList.remove("invalid");
           if (savedErr) savedErr.textContent = "";
           return true;
@@ -109,7 +108,7 @@ monthSelect?.addEventListener("change", () => {
   render();
 });
 
-// Eventos de validação ao digitar (só para habilitar/desabilitar botão, sem “vermelho”)
+// Eventos de validação ao digitar
 [nameInput, targetInput, savedInput].forEach((el) => {
   el?.addEventListener("input", () => {
     v.setShowMsg(false);

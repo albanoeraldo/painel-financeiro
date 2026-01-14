@@ -1,10 +1,6 @@
 @charset "UTF-8";
 
-/* =========================================================
-   BASE (desktop-first) – componentes que valem em qualquer tela
-========================================================= */
-
-/* Fixas: layout geral */
+/* Fixas: geral */
 .row.stack{
   display:flex;
   flex-direction:column;
@@ -48,9 +44,7 @@
   cursor:pointer;
 }
 
-/* =========================================================
-   GRID GERAL
-========================================================= */
+/* GRID GERAL */
 
 /* até 899px: grid 2 colunas */
 @media (max-width: 899px){
@@ -64,9 +58,7 @@
   .brand h1{ font-size:15px; }
 }
 
-/* =========================================================
-   FIXAS – Desktop
-========================================================= */
+/* FIXAS – Desktop */
 @media (min-width: 900px){
   .form-actions.fixas-grid{
     grid-template-columns: 2.2fr 0.9fr 0.7fr 1.2fr 0.5fr 1.3fr;
@@ -77,9 +69,7 @@
   }
 }
 
-/* =========================================================
-   FIXAS – Mobile
-========================================================= */
+/* FIXAS – Mobile */
 @media (max-width: 899px){
   .form-actions.fixas-grid{
     grid-template-columns: 1fr;
@@ -90,7 +80,6 @@
     width:100%;
   }
 
-  /* mantém qualquer .form-actions em coluna (cartão/meta etc.) */
   .form-actions{
     grid-template-columns: 1fr;
   }
@@ -106,9 +95,7 @@
   }
 }
 
-/* =========================================================
-   HEADER – Mobile
-========================================================= */
+/* HEADER – Mobile */
 @media (max-width: 790px){
   header{
     display:grid;
@@ -149,9 +136,7 @@
   }
 }
 
-/* =========================================================
-   NAV + KPIs – Mobile
-========================================================= */
+/* NAV + KPIs – Mobile */
 @media (max-width: 700px){
   .nav{
     position:sticky;
@@ -192,12 +177,10 @@
     padding:14px;
   }
 
-  /* 5º card ocupa linha toda */
   #kpis .card:nth-child(5){
     grid-column: 1 / -1;
   }
 
-  /* evita quebra do valor */
   #kpis .kpi .value{
     white-space:nowrap;
     word-break:normal;
@@ -211,9 +194,7 @@
   }
 }
 
-/* =========================================================
-   CATEGORIAS DO MÊS – Corrige vazamento (mobile e geral)
-========================================================= */
+/* CATEGORIAS DO MÊS – Corrige vazamento (mobile e geral) */
 #categoriesSummary,
 #cardCategories{
   overflow:hidden;
@@ -242,7 +223,6 @@
     gap:8px !important;
   }
 
-  /* sobrescreve min-width inline do JS */
   #categoriesSummary [style*="min-width:180px"],
   #cardCategories [style*="min-width:180px"]{
     min-width:0 !important;
@@ -257,9 +237,7 @@
   }
 }
 
-/* =========================================================
-   EXTRA SMALL
-========================================================= */
+/* EXTRA */
 @media (max-width: 420px){
   .nav{
     grid-template-columns: repeat(2, minmax(0, 1fr));

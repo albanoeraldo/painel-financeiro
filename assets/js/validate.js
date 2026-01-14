@@ -1,5 +1,5 @@
 export function createValidator({ showOn = "submit" } = {}) {
-  let showMsg = showOn === "input"; // se "input", valida mostrando ao digitar
+  let showMsg = showOn === "input";
 
   function setShowMsg(v) {
     showMsg = !!v;
@@ -10,7 +10,6 @@ export function createValidator({ showOn = "submit" } = {}) {
 
     const hasErr = !!msg;
 
-    // ✅ Se showMsg estiver OFF, não mostra NADA (nem borda vermelha, nem texto)
     if (!showMsg) {
       input.classList.remove("invalid");
       if (errEl) errEl.textContent = "";

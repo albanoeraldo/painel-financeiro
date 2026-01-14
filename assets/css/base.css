@@ -1,8 +1,6 @@
 @charset "UTF-8";
 
-/* =========================
-   TOKENS / BASE
-========================= */
+/* BASE */
 :root{
   --bg:#F7F8FC;
   --card:#ffffff;
@@ -34,9 +32,7 @@ body{
   padding: 18px;
 }
 
-/* =========================
-   HEADER
-========================= */
+/* HEADER */
 header{
   display:flex;
   gap:14px;
@@ -79,9 +75,7 @@ header{
   align-items:center;
 }
 
-/* =========================
-   NAV
-========================= */
+/* NAV */
 .nav{
   display:flex;
   gap:8px;
@@ -112,9 +106,7 @@ header{
   box-shadow: 0 3px 3px rgba(37,99,235,.12);
 }
 
-/* =========================
-   LAYOUT / CARDS
-========================= */
+/* CARDS */
 .topbar{
   display:flex;
   gap:10px;
@@ -156,9 +148,7 @@ header{
   min-width: 280px;
 }
 
-/* =========================
-   FORMS / BUTTONS
-========================= */
+/* BUTTONS */
 button, input, select{
   font:inherit;
   height: 42px;
@@ -220,9 +210,7 @@ input:focus, select:focus{
   box-shadow: 0 0 0 4px rgba(37,99,235,.10);
 }
 
-/* =========================
-   TABLE
-========================= */
+/* TABLE */
 .table{
   width:100%;
   border-collapse:separate;
@@ -246,9 +234,7 @@ input:focus, select:focus{
 
 .right{ text-align:right; }
 
-/* =========================
-   BADGE / HELPERS
-========================= */
+/* BADGE */
 .badge{
   display:inline-flex;
   align-items:center;

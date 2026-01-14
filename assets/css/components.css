@@ -1,8 +1,6 @@
 @charset "UTF-8";
 
-/* =========================
-   KPI
-========================= */
+/* KPI */
 .kpi .label{
   color:var(--muted);
   font-size:12px;
@@ -14,9 +12,7 @@
   margin-top:6px;
 }
 
-/* =========================
-   EMPTY STATE
-========================= */
+/* EMPTY STATE */
 .empty{
   border:1px dashed var(--border);
   background: rgba(255,255,255,.65);
@@ -48,9 +44,7 @@
 }
 
 
-/* =========================
-   VALIDATION
-========================= */
+/* VALIDAÇÃO */
 .field{
   display:flex;
   flex-direction:column;
@@ -70,9 +64,7 @@ input.invalid{
   outline: none;
 }
 
-/* =========================
-   FIXAS: FORM GRID
-========================= */
+/* FIXAS: FORM GRID*/
 .form-actions{
   display: grid;
   grid-template-columns: 2fr 1.3fr 1fr 1fr auto; /* desc | valor | dia | botão */
@@ -94,9 +86,7 @@ input.invalid{
   width: 100%;
 }
 
-/* =========================
-   TABLE: PAGO? checkbox
-========================= */
+/* TABLE: PAGO? */
 .table th:nth-child(4),
 .table td:nth-child(4){
   width: 90px;
@@ -110,9 +100,7 @@ input.invalid{
   accent-color: var(--blue);
 }
 
-/* =========================
-   TABLE WRAP (mobile scroll)
-========================= */
+/* mobile scroll */
 .table-wrap{
   width: 100%;
   overflow-x: auto;
@@ -120,9 +108,7 @@ input.invalid{
   border-radius: 12px;
 }
 
-/* =========================
-   Drag & Drop estilo
-========================= */
+/* Drag & Drop estilo */
 tr.dragging { opacity: .5; }
 tr.over { outline: 2px dashed rgba(37,99,235,.6); outline-offset: -4px; }
 tr[draggable="true"] { cursor: grab; }
@@ -150,7 +136,7 @@ tr.dragging { cursor: grabbing; }
 .icon-btn img{
   width: 18px;
   height: 18px;
-  pointer-events: none; /* evita conflito com drag/click */
+  pointer-events: none;
 }
 
 .icon-btn:hover{
@@ -158,16 +144,15 @@ tr.dragging { cursor: grabbing; }
   transform: scale(1.05);
 }
 
-/* opcional: destaque por ação */
 .icon-btn.del:hover{
-  background: rgba(239,68,68,.12); /* vermelho suave */
+  background: rgba(239,68,68,.12);
 }
 
 .icon-btn.edit:hover{
-  background: rgba(100,116,139,.12); /* cinza elegante */
+  background: rgba(100,116,139,.12);
 }
 
-/* ===== User pill (header) ===== */
+/* ===== User pill ===== */
 .user-pill{
   display: inline-flex;
   align-items: center;

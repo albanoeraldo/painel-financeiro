@@ -57,7 +57,6 @@ function buildMonthRange({ startYear = 2026, endYear = 2030 } = {}){
 }
 
 export async function initHeader(active){
-  // ✅ garante que está logado (evita bugs de sessão em páginas)
   const session = await requireAuth();
   if(!session) return;
 
@@ -66,14 +65,13 @@ export async function initHeader(active){
     if(a.dataset.page === active) a.classList.add("active");
   });
 
-  // ✅ botão sair (funciona em todas as páginas)
+  // ✅ botão sair
   const logoutBtn = document.getElementById("logoutBtn");
   logoutBtn?.addEventListener("click", async ()=> {
     logoutBtn.disabled = true;
     await signOut();
   });
 
-  // month select
   const monthSelect = document.querySelector("#monthSelect");
   if(!monthSelect) return;
 

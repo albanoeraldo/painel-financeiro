@@ -6,18 +6,16 @@ import { pullStateFromCloud } from "./cloudState.js";
 await initHeader("dashboard");
 await renderUserName();
 
-// ✅ Puxa do Supabase e grava no localStorage antes de usar state/month
+// Puxa do Supabase e grava no localStorage antes de usar state/month
 const cloud = await pullStateFromCloud();
 if (cloud) saveState(cloud);
 
-// Estado e mês (let pq muda ao trocar o mês)
+// Estado e mês
 let ym = getSelectedMonth();
 const state = loadState();
 let month = ensureMonth(state, ym);
 
-// -------------------------
 // Normalização
-// -------------------------
 function normalizeMonth(m){
   m.incomeBase  = Number(m.incomeBase || 0);
   m.incomeExtra = Array.isArray(m.incomeExtra) ? m.incomeExtra : [];
@@ -57,9 +55,7 @@ function clearErr(input, errEl){
   if (errEl) errEl.textContent = "";
 }
 
-// -------------------------
 // Categorias (para o Dashboard)
-// -------------------------
 const CATEGORIES = [
   { key: "moradia", label: "🏠 Moradia" },
   { key: "alimentacao", label: "🍽️ Alimentação" },
@@ -76,22 +72,14 @@ function catLabel(key){
   return c ? c.label : "📌 Outros";
 }
 
-/**
- * ✅ NOVO: Normaliza categoria vinda do Fixas/Cartão
- * - aceita "moradia" (key)
- * - aceita "Moradia" (texto)
- * - aceita "📶 Internet/Telefone" etc (texto com emoji)
- */
 function normalizeCategoryKey(raw){
   const s = String(raw || "").trim();
   if(!s) return "outros";
 
-  // já é key?
   if(CATEGORIES.some(c => c.key === s)) return s;
 
-  // remove emoji e normaliza texto
   const clean = s
-    .replace(/^[^\p{L}\p{N}]*/gu, "") // tira emoji no início (best-effort)
+    .replace(/^[^\p{L}\p{N}]*/gu, "")
     .trim()
     .toLowerCase();
 
@@ -113,7 +101,7 @@ function normalizeCategoryKey(raw){
   return mapTextToKey[clean] || "outros";
 }
 
-// ✅ total das assinaturas ativas do cartão
+// total das assinaturas ativas do cartão
 function cardRecurringTotal(m){
   return sum((m.cardRecurring || [])
     .filter(x => x && x.active !== false)
@@ -145,8 +133,8 @@ function totalsByCategoryFixed(m){
 }
 
 function totalsByCategoryExpenses(m){
-  const mapTotal = {}; // total por categoria das despesas do mês (pendentes + cartão)
-  const mapPending = {}; // pendente por categoria (aqui só faz sentido para Fixas)
+  const mapTotal = {}; 
+  const mapPending = {}; 
 
   // FIXAS (pendentes) por categoria
   (m.fixed || []).forEach(it=>{
@@ -181,7 +169,7 @@ function totalsByCategoryExpenses(m){
 function calcTotals(m){
   const { fixedTotal, fixedPending, fixedPaid } = fixedTotals(m);
 
-  // ✅ parcelas + assinaturas
+  // parcelas + assinaturas
   const cardParts = sum((m.card || []).map(x => x.monthValue));
   const cardRec   = cardRecurringTotal(m);
   const card      = cardParts + cardRec;
@@ -192,10 +180,10 @@ function calcTotals(m){
   const incomeExtra = (m.incomeExtra || []).reduce((a,b)=> a + Number(b.value || 0), 0);
   const income      = incomeBase + incomeExtra;
 
-  // ✅ Falta pagar muda conforme você marca "pago?"
+  // Falta pagar muda conforme você marca "pago?"
   const despesasPendentes = fixedPending + card + goals;
 
-  // ✅ Saldo NÃO muda ao pagar fixas (usa o plano do mês)
+  // Saldo NÃO muda ao pagar fixas (usa o plano do mês)
   const despesasPlanejadas = fixedTotal + card + goals;
   const saldo = income - despesasPlanejadas;
 
@@ -208,15 +196,13 @@ function calcTotals(m){
     incomeBase,
     incomeExtra,
     income,
-    despesasPendentes,      // "Falta pagar (mês)"
-    despesasPlanejadas,     // opcional (se quiser usar depois)
-    saldo                   // "Saldo (sobra/falta)" travado
+    despesasPendentes,      
+    despesasPlanejadas,     
+    saldo                   
   };
 }
 
-// -------------------------
 // Renders
-// -------------------------
 function renderKpis(){
   const {
     fixedTotal, fixedPending, fixedPaid,
@@ -300,7 +286,6 @@ function renderCategories(){
   const el = ensureCategoriesCard();
   if(!el) return;
 
-  // ✅ agora integra Fixas (pendentes) + Cartão
   const { mapTotal, mapPending } = totalsByCategoryExpenses(month);
 
   const entries = Object.entries(mapTotal)
@@ -350,7 +335,6 @@ function renderMonthSummary(){
   const tbody = document.querySelector("#monthBreakdown tbody");
   if(!tbody) return;
 
-  // ✅ aqui também considera fixas pendentes
   const { fixedTotal, fixedPending } = fixedTotals(month);
 
   const cardParts = sum((month.card || []).map(x => x.monthValue));
