@@ -1,22 +1,58 @@
 import { loadState, saveState, ensureMonth, ymToLabel } from "./storage.js";
 import { supabase } from "./supabaseClient.js";
 
+/* ========================= Perfil local (nome + foto) ========================= */
+const PROFILE_KEY = "profile_v1";
+
+function getStoredProfile(userId){
+  try{
+    const all = JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}");
+    return all[userId] || null;
+  }catch{
+    return null;
+  }
+}
+
+function firstLetter(name){
+  const t = (name || "").trim();
+  return t ? t[0].toUpperCase() : "U";
+}
+
 export async function renderUserName(){
-  const { data } = await supabase.auth.getUser();
-  const user = data?.user;
+  // getUser() é ok, mas getSession costuma ser mais “estável” no fluxo
+  const { data: sess } = await supabase.auth.getSession();
+  const user = sess?.session?.user;
+
+  if(!user) return;
+
+  const saved = getStoredProfile(user.id);
 
   const name =
+    saved?.name ||
     user?.user_metadata?.name ||
     user?.email?.split("@")[0] ||
     "Usuário";
 
-  const el = document.getElementById("userName");
-  if(el) el.textContent = name;
+  const photo = saved?.photo || null;
 
-  const av = document.getElementById("userAvatar");
-  if(av) av.textContent = (name.trim()[0] || "U").toUpperCase();
+  const nameEl = document.getElementById("userName");
+  if(nameEl) nameEl.textContent = name;
+
+  const avatarEl = document.getElementById("userAvatar");
+  if(avatarEl){
+    if(photo){
+      avatarEl.innerHTML = `<img src="${photo}" alt="avatar" style="width:100%; height:100%; object-fit:cover; border-radius:999px;" />`;
+    }else{
+      // garante que não fica HTML antigo quando remover foto
+      avatarEl.textContent = firstLetter(name);
+    }
+  }
+
+  const badge = document.getElementById("userBadge");
+  if(badge) badge.style.display = "inline-flex";
 }
 
+/* ========================= Mês / Seleção ========================= */
 export function currentYm(){
   const d = new Date();
   const y = d.getFullYear();
@@ -30,7 +66,7 @@ export function getSelectedMonth(){
   return el?.value || saved || currentYm();
 }
 
-// --- AUTH helpers ---
+/* ========================= AUTH helpers ========================= */
 export async function requireAuth(){
   const { data } = await supabase.auth.getSession();
   if(!data.session){
@@ -65,7 +101,7 @@ export async function initHeader(active){
     if(a.dataset.page === active) a.classList.add("active");
   });
 
-  // ✅ botão sair
+  // botão sair
   const logoutBtn = document.getElementById("logoutBtn");
   logoutBtn?.addEventListener("click", async ()=> {
     logoutBtn.disabled = true;
@@ -76,7 +112,7 @@ export async function initHeader(active){
   if(!monthSelect) return;
 
   const state = loadState();
-  state.months = state.months || {}; // segurança
+  state.months = state.months || {};
   const cur = currentYm();
 
   // se não existir nenhum mês ainda, cria o mês atual
@@ -110,9 +146,10 @@ export async function initHeader(active){
   document.querySelector("#exportCsv")?.addEventListener("click", ()=> exportCsv());
 }
 
+/* ========================= Export CSV ========================= */
 function download(filename, content, mime){
   const blob = new Blob([content], { type:mime });
- _toggleDownload(blob, filename);
+  _toggleDownload(blob, filename);
 }
 function _toggleDownload(blob, filename){
   const url = URL.createObjectURL(blob);

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Perfil • Controle Financeiro</title>
+
+  <link rel="stylesheet" href="assets/css/base.css"/>
+  <link rel="stylesheet" href="assets/css/components.css"/>
+  <link rel="stylesheet" href="assets/css/responsive.css"/>
+  <link rel="stylesheet" href="assets/css/tema.css"/>
+</head>
+
+<body>
+  <div class="container">
+
+    <header>
+      <div class="header-left">
+        <img class="logo" src="assets/img/logo.png" alt="logo">
+        <div class="brand">
+          <h1>Perfil</h1>
+          <small>Edite seu nome e avatar</small>
+        </div>
+      </div>
+
+        <div class="actions">
+            <a class="btn-soft back-btn" href="index.html">Voltar</a>
+        </div>
+    </header>
+
+    <div class="card">
+      <h3 style="margin:0 0 10px;">Meu perfil</h3>
+
+      <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+        <div class="user-badge big" id="avatarPreview">
+          <span class="avatar" id="avatarLetter">A</span>
+          <span class="name" id="avatarName">Usuário</span>
+        </div>
+
+        <div style="flex:1; min-width:260px;">
+          <div class="field">
+            <label style="display:block; font-size:12px; opacity:.75; margin:0 0 6px;">Nome</label>
+            <input id="profileName" type="text" placeholder="Ex: Albano" />
+            <small class="helper">Esse nome aparece no topo do sistema.</small>
+          </div>
+
+          <div class="field" style="margin-top:12px;">
+            <label style="display:block; font-size:12px; opacity:.75; margin:0 0 6px;">Foto (opcional)</label>
+            <input id="profilePhoto" type="file" accept="image/*" />
+            <small class="helper">A imagem é salva localmente no seu navegador.</small>
+          </div>
+
+          <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;">
+            <button id="saveProfile" class="primary" type="button">Salvar</button>
+            <button id="removePhoto" class="btn-soft" type="button">Remover foto</button>
+            <button id="resetProfile" class="btn-danger" type="button">Resetar perfil</button>
+          </div>
+
+          <small id="profileMsg" class="hint" style="display:block; margin-top:10px;"></small>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="assets/js/perfil.js"></script>
+</body>
+</html>
