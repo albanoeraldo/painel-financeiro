@@ -69,15 +69,34 @@ export function getSelectedMonth(){
 /* ========================= AUTH helpers ========================= */
 export async function requireAuth(){
   const { data } = await supabase.auth.getSession();
-  if(!data.session){
+  const session = data?.session;
+
+  if(!session){
     window.location.href = "login.html";
     return null;
   }
-  return data.session;
+
+  // evita “copiar” state do usuário anterior no mesmo navegador
+  const uid = session.user.id;
+  const lastUid = localStorage.getItem("albano_financas_uid");
+
+  if(lastUid && lastUid !== uid){
+    localStorage.removeItem("albano_financas_v1");
+    localStorage.removeItem("albano_financas_last_month");
+  }
+
+  localStorage.setItem("albano_financas_uid", uid);
+  return session;
 }
 
 export async function signOut(){
   await supabase.auth.signOut();
+
+  // limpa state local para não vazar entre contas
+  localStorage.removeItem("albano_financas_v1");
+  localStorage.removeItem("albano_financas_last_month");
+  localStorage.removeItem("albano_financas_uid");
+
   window.location.href = "login.html";
 }
 
