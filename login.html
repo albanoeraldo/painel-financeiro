@@ -9,36 +9,59 @@
   <link rel="stylesheet" href="assets/css/login.css">
 </head>
 <body>
-  <div class="login-wrapper">
-    <!-- COLUNA ESQUERDA -->
-    <div class="login-left">
-      <div class="login-card">
-        <h1>Bem-vindo(a)!</h1>
-        <p>Acesse com seu e-mail e senha</p>
 
-        <div class="field">
-          <label>E-mail</label>
-          <input type="email" id="email" placeholder="seu@email.com">
+  <main class="login-page">
+    <section class="login-box">
+
+      <!-- LADO ESQUERDO -->
+      <div class="login-panel login-panel-left">
+        <div class="login-content">
+          <h1>Bem vindo(a)!</h1>
+
+          <form id="loginForm" class="login-form">
+            <div class="field">
+              <label for="email">Usuário</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="Digite seu e-mail"
+                autocomplete="email"
+              >
+            </div>
+
+            <div class="field">
+              <label for="password">Senha</label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Digite sua senha"
+                autocomplete="current-password"
+              >
+            </div>
+
+            <div class="login-options">
+              <a href="#" class="forgot-password">Esqueceu a senha?</a>
+            </div>
+
+            <button type="submit" id="loginBtn" class="primary">ENTRAR</button>
+
+            <div class="login-error" id="loginError"></div>
+          </form>
         </div>
-
-        <div class="field">
-          <label>Senha</label>
-          <input type="password" id="password" placeholder="••••••••">
-        </div>
-
-        <button id="loginBtn" class="primary">Login</button>
-
-        <div class="login-error" id="loginError"></div>
       </div>
-    </div>
 
-    <!-- COLUNA DIREITA -->
-    <div class="login-right">
-      <img src="assets/img/img-login.png" alt="Albano Tech">
-    </div>
-  </div>
+      <!-- LADO DIREITO -->
+      <div class="login-panel login-panel-right">
+        <div class="illustration-box">
+          <img src="assets/img/img-login.png" alt="Ilustração de login">
+        </div>
+      </div>
+
+    </section>
+  </main>
 
   <script type="module" src="assets/js/login.js"></script>
-
 </body>
 </html>
