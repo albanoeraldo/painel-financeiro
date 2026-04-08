@@ -1,6 +1,6 @@
 @charset "UTF-8";
 
-/* Fixas: geral */
+/* FIXAS: geral */
 .row.stack{
   display:flex;
   flex-direction:column;
@@ -45,17 +45,26 @@
 }
 
 /* GRID GERAL */
-
-/* até 899px: grid 2 colunas */
 @media (max-width: 899px){
-  .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .brand h1{ font-size:20px; }
+  .grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .brand h1,
+  .page-header .brand h1{
+    font-size:20px;
+  }
 }
 
-/* até 520px: grid 1 coluna */
 @media (max-width: 520px){
-  .grid{ grid-template-columns: 1fr; }
-  .brand h1{ font-size:15px; }
+  .grid{
+    grid-template-columns: 1fr;
+  }
+
+  .brand h1,
+  .page-header .brand h1{
+    font-size:16px;
+  }
 }
 
 /* FIXAS – Desktop */
@@ -64,7 +73,9 @@
     grid-template-columns: 2.2fr 0.9fr 0.7fr 1.2fr 0.5fr 1.3fr;
   }
 
-  #addFixedBtn, #add, #importPrevBtn{
+  #addFixedBtn,
+  #add,
+  #importPrevBtn{
     width:100%;
   }
 }
@@ -95,75 +106,106 @@
   }
 }
 
-/* HEADER – Mobile */
-@media (max-width: 790px){
-  header{
-    display:grid;
-    grid-template-columns:auto 1fr;
-    grid-template-areas:"left right";
-    align-items:center;
-    gap:12px;
+/* LAYOUT COM SIDEBAR – TABLET/MOBILE */
+@media (max-width: 900px){
+  .app-layout{
+    grid-template-columns: 1fr;
   }
 
-  header .header-left{
-    grid-area:left;
-    display:flex;
-    align-items:center;
-    gap:12px;
-    min-width:0;
-  }
-
-  header .brand{ min-width:0; }
-
-  header .actions{
-    grid-area:right;
-    justify-self:end;
-    display:flex;
-    flex-direction:column;
-    align-items:flex-end;
-    gap:8px;
-    width:min(320px, 100%);
-  }
-
-  header .actions select{
+  .sidebar{
     width:100%;
-    min-width:0;
+    padding:16px;
+    gap:16px;
   }
 
-  header .actions button{
-    width:100%;
-    white-space:nowrap;
+  .sidebar-top{
+    gap:16px;
   }
-}
 
-/* NAV + KPIs – Mobile */
-@media (max-width: 700px){
-  .nav{
-    position:sticky;
-    top:10px;
-    z-index:50;
+  .sidebar-brand{
+    padding:0;
+  }
 
-    padding:10px;
-    margin-top:10px;
-    border-radius:16px;
+  .sidebar-brand-text h2{
+    font-size:18px;
+  }
 
-    background:rgba(255,255,255,.95);
-    border:1px solid var(--border);
-    box-shadow:0 10px 24px rgba(2,6,23,.08);
+  .sidebar-brand-text small{
+    font-size:12px;
+  }
 
-    display:grid;
-    grid-template-columns:repeat(3, minmax(0, 1fr));
+  .sidebar-nav{
+    flex-direction:row;
+    flex-wrap:wrap;
     gap:10px;
   }
 
-  .nav a{
-    width:100%;
+  .sidebar-nav a{
+    flex:1 1 calc(50% - 10px);
     text-align:center;
-    padding:10px 0;
+    padding:12px 14px;
+  }
 
+  .sidebar-footer{
+    border-top:0;
+    padding-top:0;
+    gap:10px;
+  }
+
+  .sidebar-user{
+    justify-content:center;
+    padding:10px 12px;
+    border-radius:12px;
+    background:rgba(255,255,255,.06);
+  }
+
+  .sidebar-logout{
+    width:100%;
+  }
+
+  .main-content .container{
+    padding:16px;
+  }
+
+  .page-header{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:12px;
+  }
+
+  .page-header .actions{
+    width:100%;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+
+  .page-header .actions select,
+  .page-header .actions button,
+  .page-header .actions a{
+    width:100%;
+    min-width:0;
+  }
+}
+
+/* MOBILE MENOR */
+@media (max-width: 700px){
+  .sidebar-nav{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:10px;
+  }
+
+  .sidebar-nav a{
+    flex:none;
+    width:100%;
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
+  }
+
+  .page-header .actions{
+    grid-template-columns:1fr;
   }
 
   /* KPIs: 2 colunas */
@@ -192,9 +234,27 @@
   #kpis .kpi .label{
     font-size:12px;
   }
+
+  .actions.align-top{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .actions.align-top .field,
+  .actions.align-top button{
+    width:100%;
+  }
+
+  .table-wrap{
+    overflow-x:auto;
+  }
+
+  .table{
+    min-width:620px;
+  }
 }
 
-/* CATEGORIAS DO MÊS – Corrige vazamento (mobile e geral) */
+/* CATEGORIAS DO MÊS – Corrige vazamento */
 #categoriesSummary,
 #cardCategories{
   overflow:hidden;
@@ -235,12 +295,13 @@
     width:100%;
     text-align:left !important;
   }
-}
 
-/* EXTRA */
-@media (max-width: 420px){
-  .nav{
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .sidebar{
+    padding:14px;
+  }
+
+  .sidebar-nav{
+    grid-template-columns:1fr;
   }
 
   #kpis{
@@ -249,5 +310,14 @@
 
   #kpis .kpi .value{
     font-size:22px;
+  }
+
+  .page-header .brand h1{
+    font-size:18px;
+    line-height:1.2;
+  }
+
+  .card{
+    padding:12px;
   }
 }
