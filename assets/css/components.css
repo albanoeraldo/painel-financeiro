@@ -168,3 +168,145 @@ tr.over{
   align-items:center;
   gap:6px;
 }
+
+/* =========================
+   GATINHO FIXO / ARRASTÁVEL
+========================= */
+.dashboard-cat-box{
+  position: fixed;
+  left: 70px;
+  top: calc(100vh - 230px);
+  width: 120px;
+  height: 120px;
+  z-index: 500;
+  pointer-events: auto;
+}
+
+.dashboard-cat-fixed{
+  position: relative;
+  width: 120px;
+  height: 120px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: grab;
+  touch-action: none;
+}
+
+.dashboard-cat-fixed:hover{
+  background: transparent;
+  box-shadow: none;
+}
+
+.dashboard-cat-fixed.dragging{
+  cursor: grabbing;
+}
+
+.dashboard-cat-img{
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+  animation: catBreath 2.6s ease-in-out infinite;
+}
+
+.dashboard-cat-shadow{
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  width: 64px;
+  height: 12px;
+  background: rgba(0,0,0,.16);
+  border-radius: 999px;
+  transform: translateX(-50%);
+  filter: blur(4px);
+  z-index: -1;
+  animation: catShadowPulse 2.6s ease-in-out infinite;
+}
+
+.dashboard-cat-fixed.dragging .dashboard-cat-shadow{
+  opacity: 0;
+}
+
+.dashboard-cat-bubble{
+  position: absolute;
+  left: 50%;
+  bottom: 100px;
+  transform: translateX(-50%) translateY(8px);
+  background: rgba(255,255,255,.98);
+  color: #0f172a;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity .2s ease, transform .2s ease;
+  box-shadow: 0 10px 24px rgba(0,0,0,.12);
+}
+
+.dashboard-cat-bubble::after{
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  background: rgba(255,255,255,.98);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.dashboard-cat-fixed.show-bubble .dashboard-cat-bubble{
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.dashboard-cat-fixed.is-sleeping .dashboard-cat-img{
+  animation: catSleepFloat 3s ease-in-out infinite;
+}
+
+.dashboard-cat-fixed.is-sleeping .dashboard-cat-shadow{
+  animation: catSleepShadow 3s ease-in-out infinite;
+}
+
+.dashboard-cat-fixed.is-awake .dashboard-cat-img{
+  animation: catWake .45s ease;
+}
+
+@keyframes catBreath{
+  0%,100%{ transform: translateY(0); }
+  50%{ transform: translateY(-2px); }
+}
+
+@keyframes catShadowPulse{
+  0%,100%{ transform: translateX(-50%) scaleX(1); opacity: .16; }
+  50%{ transform: translateX(-50%) scaleX(.92); opacity: .11; }
+}
+
+@keyframes catSleepFloat{
+  0%,100%{ transform: translateY(0); }
+  50%{ transform: translateY(-1px); }
+}
+
+@keyframes catSleepShadow{
+  0%,100%{ transform: translateX(-50%) scaleX(1); opacity: .14; }
+  50%{ transform: translateX(-50%) scaleX(.95); opacity: .09; }
+}
+
+@keyframes catWake{
+  0%{ transform: translateY(0) scale(1); }
+  40%{ transform: translateY(-8px) scale(1.03); }
+  100%{ transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 700px){
+  .dashboard-cat-box{
+    display: none;
+  }
+}
