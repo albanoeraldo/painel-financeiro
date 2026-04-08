@@ -43,31 +43,14 @@
   let startY = 0;
   let offsetX = 0;
   let offsetY = 0;
+  let ignoreNextClick = false;
+
+  function isMobileCat() {
+    return window.innerWidth <= 700;
+  }
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(value, max));
-  }
-
-  function showCatEasterEgg() {
-    if (!easterEgg || !easterEggText) return;
-
-    const messages = [
-      "miau supremo 😺",
-      "você me achou!",
-      "ronrom lendário ✨",
-      "humano favorito detectado",
-      "gatinho secreto desbloqueado"
-    ];
-
-    easterEggText.textContent =
-      messages[Math.floor(Math.random() * messages.length)];
-
-    easterEgg.classList.add("show");
-
-    clearTimeout(easterEggTimer);
-    easterEggTimer = setTimeout(() => {
-      easterEgg.classList.remove("show");
-    }, 1800);
   }
 
   function getDefaultPosition() {
@@ -97,6 +80,28 @@
     localStorage.setItem(POS_KEY, JSON.stringify({ x, y }));
   }
 
+  function showCatEasterEgg() {
+    if (!easterEgg || !easterEggText) return;
+
+    const messages = [
+      "miau supremo 😺",
+      "você me achou!",
+      "ronrom lendário ✨",
+      "humano favorito detectado",
+      "gatinho secreto desbloqueado"
+    ];
+
+    easterEggText.textContent =
+      messages[Math.floor(Math.random() * messages.length)];
+
+    easterEgg.classList.add("show");
+
+    clearTimeout(easterEggTimer);
+    easterEggTimer = setTimeout(() => {
+      easterEgg.classList.remove("show");
+    }, 1800);
+  }
+
   function updateCatFacing(catCenterX) {
     const main = document.querySelector(".main-content");
     if (!main) return;
@@ -112,6 +117,13 @@
   }
 
   function applyPosition(x, y) {
+    if (isMobileCat()) {
+      catBox.style.left = "";
+      catBox.style.top = "";
+      cat.style.setProperty("--cat-face", "1");
+      return;
+    }
+
     const maxX = window.innerWidth - catBox.offsetWidth - 10;
     const maxY = window.innerHeight - catBox.offsetHeight - 10;
 
@@ -188,7 +200,26 @@
     }, 700);
   }
 
+  function handleCatClick() {
+    clickCount++;
+
+    clearTimeout(clickTimer);
+    clickTimer = setTimeout(() => {
+      clickCount = 0;
+    }, 1800);
+
+    wakeUpMessage();
+    startCycle();
+
+    if (clickCount >= 4) {
+      clickCount = 0;
+      showCatEasterEgg();
+    }
+  }
+
   cat.addEventListener("pointerdown", (e) => {
+    if (isMobileCat()) return;
+
     pointerDown = true;
     dragging = false;
     moved = false;
@@ -204,7 +235,7 @@
   });
 
   cat.addEventListener("pointermove", (e) => {
-    if (!pointerDown) return;
+    if (!pointerDown || isMobileCat()) return;
 
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
@@ -227,38 +258,22 @@
   });
 
   cat.addEventListener("pointerup", () => {
+    if (isMobileCat()) return;
     if (!pointerDown) return;
 
     pointerDown = false;
 
     if (dragging) {
       dragging = false;
+      ignoreNextClick = true;
       cat.classList.remove("dragging");
 
       const rect = catBox.getBoundingClientRect();
       savePosition(rect.left, rect.top);
 
       setState("sit");
-      showBubble("Estou aqui 😺", 1200);
+      showBubble("Fiquei aqui 😺", 1200);
       startCycle();
-      return;
-    }
-
-    if (!moved) {
-      clickCount++;
-
-      clearTimeout(clickTimer);
-      clickTimer = setTimeout(() => {
-        clickCount = 0;
-      }, 1800);
-
-      wakeUpMessage();
-      startCycle();
-
-      if (clickCount >= 4) {
-        clickCount = 0;
-        showCatEasterEgg();
-      }
     }
   });
 
@@ -270,12 +285,35 @@
     startCycle();
   });
 
+  cat.addEventListener("click", () => {
+    if (ignoreNextClick) {
+      ignoreNextClick = false;
+      return;
+    }
+
+    if (dragging) return;
+
+    handleCatClick();
+  });
+
   window.addEventListener("resize", () => {
+    if (isMobileCat()) {
+      catBox.style.left = "";
+      catBox.style.top = "";
+      cat.style.setProperty("--cat-face", "1");
+      return;
+    }
+
     const rect = catBox.getBoundingClientRect();
     applyPosition(rect.left, rect.top);
   });
 
-  const initialPos = getSavedPosition();
-  applyPosition(initialPos.x, initialPos.y);
+  if (!isMobileCat()) {
+    const initialPos = getSavedPosition();
+    applyPosition(initialPos.x, initialPos.y);
+  } else {
+    cat.style.setProperty("--cat-face", "1");
+  }
+
   startCycle();
 })();
