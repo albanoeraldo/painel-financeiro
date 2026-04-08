@@ -3,6 +3,8 @@
   const cat = document.getElementById("dashboardCat");
   const catImg = document.getElementById("dashboardCatImg");
   const bubble = document.getElementById("dashboardCatBubble");
+  const easterEgg = document.getElementById("catEasterEgg");
+  const easterEggText = document.getElementById("catEasterEggText");
 
   if (!catBox || !cat || !catImg || !bubble) return;
 
@@ -14,7 +16,7 @@
 
   const awakeMessages = [
     "Miau! 😺",
-    "ronrom ✨",
+    "Ronrom ✨",
     "Ei humano",
     "Cafuné?",
     "Você de novo 👀",
@@ -30,6 +32,9 @@
   let currentState = "sit";
   let cycleTimer = null;
   let bubbleTimer = null;
+  let easterEggTimer = null;
+  let clickTimer = null;
+  let clickCount = 0;
 
   let pointerDown = false;
   let dragging = false;
@@ -43,6 +48,28 @@
     return Math.max(min, Math.min(value, max));
   }
 
+  function showCatEasterEgg() {
+    if (!easterEgg || !easterEggText) return;
+
+    const messages = [
+      "miau supremo 😺",
+      "você me achou!",
+      "ronrom lendário ✨",
+      "humano favorito detectado",
+      "gatinho secreto desbloqueado"
+    ];
+
+    easterEggText.textContent =
+      messages[Math.floor(Math.random() * messages.length)];
+
+    easterEgg.classList.add("show");
+
+    clearTimeout(easterEggTimer);
+    easterEggTimer = setTimeout(() => {
+      easterEgg.classList.remove("show");
+    }, 1800);
+  }
+
   function getDefaultPosition() {
     return {
       x: 65,
@@ -54,10 +81,12 @@
     try {
       const raw = localStorage.getItem(POS_KEY);
       if (!raw) return getDefaultPosition();
+
       const pos = JSON.parse(raw);
       if (typeof pos.x !== "number" || typeof pos.y !== "number") {
         return getDefaultPosition();
       }
+
       return pos;
     } catch {
       return getDefaultPosition();
@@ -66,6 +95,20 @@
 
   function savePosition(x, y) {
     localStorage.setItem(POS_KEY, JSON.stringify({ x, y }));
+  }
+
+  function updateCatFacing(catCenterX) {
+    const main = document.querySelector(".main-content");
+    if (!main) return;
+
+    const rect = main.getBoundingClientRect();
+    const middle = rect.left + rect.width / 2;
+
+    if (catCenterX > middle) {
+      cat.style.setProperty("--cat-face", "-1");
+    } else {
+      cat.style.setProperty("--cat-face", "1");
+    }
   }
 
   function applyPosition(x, y) {
@@ -77,6 +120,9 @@
 
     catBox.style.left = `${finalX}px`;
     catBox.style.top = `${finalY}px`;
+
+    const catCenterX = finalX + (catBox.offsetWidth / 2);
+    updateCatFacing(catCenterX);
   }
 
   function showBubble(text, duration = 1600) {
@@ -113,8 +159,12 @@
 
       if (currentState === "sit") {
         setState("sleep");
+
         if (Math.random() > 0.45) {
-          showBubble(sleepyMessages[Math.floor(Math.random() * sleepyMessages.length)], 1400);
+          showBubble(
+            sleepyMessages[Math.floor(Math.random() * sleepyMessages.length)],
+            1400
+          );
         }
       } else {
         setState("sit");
@@ -128,7 +178,10 @@
     cat.classList.add("is-awake");
 
     setState("sit");
-    showBubble(awakeMessages[Math.floor(Math.random() * awakeMessages.length)], 1800);
+    showBubble(
+      awakeMessages[Math.floor(Math.random() * awakeMessages.length)],
+      1800
+    );
 
     setTimeout(() => {
       cat.classList.remove("is-awake");
@@ -192,8 +245,20 @@
     }
 
     if (!moved) {
+      clickCount++;
+
+      clearTimeout(clickTimer);
+      clickTimer = setTimeout(() => {
+        clickCount = 0;
+      }, 1800);
+
       wakeUpMessage();
       startCycle();
+
+      if (clickCount >= 4) {
+        clickCount = 0;
+        showCatEasterEgg();
+      }
     }
   });
 
