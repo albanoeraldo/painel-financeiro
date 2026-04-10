@@ -284,7 +284,7 @@ tr.over{
 .dashboard-cat-bubble{
   position:absolute;
   left:50%;
-  bottom:155px;
+  bottom:185px;
   transform:translateX(-50%) translateY(8px);
   background:rgba(255,255,255,.98);
   color:#0f172a;
@@ -433,5 +433,72 @@ tr.over{
   .cat-easter-egg span{
     font-size:11px;
     padding:6px 10px;
+  }
+}
+
+.dashboard-cat-fixed.is-calculating .dashboard-cat-img{
+  animation: catCalcBounce 1s ease-in-out infinite;
+}
+
+@keyframes catCalcBounce{
+  0%,100%{
+    transform: scaleX(var(--cat-face, 1)) translateY(0);
+  }
+  50%{
+    transform: scaleX(var(--cat-face, 1)) translateY(-4px);
+  }
+}
+
+.cat-helper-popup{
+  position: fixed;
+  right: 26px;
+  bottom: 130px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(.88) translateY(20px);
+  transition: opacity .28s ease, transform .28s ease;
+}
+
+.cat-helper-popup.show{
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.cat-helper-popup img{
+  width: 180px;
+  height: auto;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 14px 28px rgba(0,0,0,.16));
+}
+
+.cat-helper-popup span{
+  background: rgba(255,255,255,.98);
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 999px;
+  box-shadow: 0 10px 24px rgba(0,0,0,.12);
+}
+
+@media (max-width: 700px){
+  .cat-helper-popup{
+    right: 14px;
+    bottom: 120px;
+  }
+
+  .cat-helper-popup img{
+    width: 120px;
+  }
+
+  .cat-helper-popup span{
+    font-size: 11px;
+    padding: 6px 10px;
   }
 }

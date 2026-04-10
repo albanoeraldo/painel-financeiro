@@ -3,14 +3,16 @@
   const cat = document.getElementById("dashboardCat");
   const catImg = document.getElementById("dashboardCatImg");
   const bubble = document.getElementById("dashboardCatBubble");
-  const easterEgg = document.getElementById("catEasterEgg");
-  const easterEggText = document.getElementById("catEasterEggText");
+
+  const helperPopup = document.getElementById("catHelperPopup");
+  const helperText = document.getElementById("catHelperText");
 
   if (!catBox || !cat || !catImg || !bubble) return;
 
   const FRAME_SIT = "assets/img/cat-frame-5.png";
   const FRAME_SLEEP = "assets/img/cat-frame-6.png";
   const FRAME_DRAG = "assets/img/cat-frame-drag.png";
+  const FRAME_CALC = "assets/img/cat-frame-calc.png";
 
   const POS_KEY = "dashboard_cat_position_v2";
 
@@ -29,12 +31,27 @@
     "Cochilando 💤"
   ];
 
+  const calcMessages = [
+    "Deixa eu calcular isso... 🧮",
+    "Hum... essas contas não fecham 😼",
+    "Pronto, agora ficou organizado! 📘"
+  ];
+
+  const helperMessages = [
+    "Tá tudo bem por aí?",
+    "Precisa de ajuda?",
+    "Qualquer coisa estou aqui, vem brincar!"
+  ];
+
   let currentState = "sit";
   let cycleTimer = null;
   let bubbleTimer = null;
-  let easterEggTimer = null;
   let clickTimer = null;
   let clickCount = 0;
+  let calcMode = false;
+  let calcTimeout = null;
+  let helperTimer = null;
+  let helperHideTimer = null;
 
   let pointerDown = false;
   let dragging = false;
@@ -78,28 +95,6 @@
 
   function savePosition(x, y) {
     localStorage.setItem(POS_KEY, JSON.stringify({ x, y }));
-  }
-
-  function showCatEasterEgg() {
-    if (!easterEgg || !easterEggText) return;
-
-    const messages = [
-      "miau supremo 😺",
-      "você me achou!",
-      "ronrom lendário ✨",
-      "humano favorito detectado",
-      "gatinho secreto desbloqueado"
-    ];
-
-    easterEggText.textContent =
-      messages[Math.floor(Math.random() * messages.length)];
-
-    easterEgg.classList.add("show");
-
-    clearTimeout(easterEggTimer);
-    easterEggTimer = setTimeout(() => {
-      easterEgg.classList.remove("show");
-    }, 1800);
   }
 
   function updateCatFacing(catCenterX) {
@@ -147,9 +142,31 @@
     }, duration);
   }
 
+  function showHelperPopup() {
+    if (!helperPopup || !helperText) return;
+
+    helperText.textContent =
+      helperMessages[Math.floor(Math.random() * helperMessages.length)];
+
+    helperPopup.classList.add("show");
+
+    clearTimeout(helperHideTimer);
+    helperHideTimer = setTimeout(() => {
+      helperPopup.classList.remove("show");
+    }, 5000);
+  }
+
+  function startHelperTimer() {
+    clearTimeout(helperTimer);
+
+    helperTimer = setTimeout(() => {
+      showHelperPopup();
+    }, 10 * 60 * 1000); // 10 minutos
+  }
+
   function setState(state) {
     currentState = state;
-    cat.classList.remove("is-sleeping", "is-awake");
+    cat.classList.remove("is-sleeping", "is-awake", "is-calculating");
 
     if (state === "sit") {
       catImg.src = FRAME_SIT;
@@ -159,15 +176,22 @@
       catImg.src = FRAME_SLEEP;
       cat.classList.add("is-sleeping");
     }
+
+    if (state === "calc") {
+      catImg.src = FRAME_CALC;
+      cat.classList.add("is-calculating");
+    }
   }
 
   function startCycle() {
     clearInterval(cycleTimer);
 
+    if (calcMode) return;
+
     setState("sit");
 
     cycleTimer = setInterval(() => {
-      if (dragging) return;
+      if (dragging || calcMode) return;
 
       if (currentState === "sit") {
         setState("sleep");
@@ -185,6 +209,8 @@
   }
 
   function wakeUpMessage() {
+    if (calcMode) return;
+
     cat.classList.remove("is-awake");
     void cat.offsetWidth;
     cat.classList.add("is-awake");
@@ -200,7 +226,27 @@
     }, 700);
   }
 
+  function triggerCalcMode() {
+    calcMode = true;
+    clearInterval(cycleTimer);
+    clearTimeout(calcTimeout);
+
+    setState("calc");
+    showBubble(
+      calcMessages[Math.floor(Math.random() * calcMessages.length)],
+      2200
+    );
+
+    calcTimeout = setTimeout(() => {
+      calcMode = false;
+      setState("sit");
+      startCycle();
+    }, 3200);
+  }
+
   function handleCatClick() {
+    if (calcMode) return;
+
     clickCount++;
 
     clearTimeout(clickTimer);
@@ -208,17 +254,18 @@
       clickCount = 0;
     }, 1800);
 
-    wakeUpMessage();
-    startCycle();
-
     if (clickCount >= 4) {
       clickCount = 0;
-      showCatEasterEgg();
+      triggerCalcMode();
+      return;
     }
+
+    wakeUpMessage();
+    startCycle();
   }
 
   cat.addEventListener("pointerdown", (e) => {
-    if (isMobileCat()) return;
+    if (isMobileCat() || calcMode) return;
 
     pointerDown = true;
     dragging = false;
@@ -235,7 +282,7 @@
   });
 
   cat.addEventListener("pointermove", (e) => {
-    if (!pointerDown || isMobileCat()) return;
+    if (!pointerDown || isMobileCat() || calcMode) return;
 
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
@@ -258,7 +305,7 @@
   });
 
   cat.addEventListener("pointerup", () => {
-    if (isMobileCat()) return;
+    if (isMobileCat() || calcMode) return;
     if (!pointerDown) return;
 
     pointerDown = false;
@@ -281,8 +328,11 @@
     pointerDown = false;
     dragging = false;
     cat.classList.remove("dragging");
-    setState("sit");
-    startCycle();
+
+    if (!calcMode) {
+      setState("sit");
+      startCycle();
+    }
   });
 
   cat.addEventListener("click", () => {
@@ -308,6 +358,15 @@
     applyPosition(rect.left, rect.top);
   });
 
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      clearTimeout(helperTimer);
+      clearTimeout(helperHideTimer);
+    } else {
+      startHelperTimer();
+    }
+  });
+
   if (!isMobileCat()) {
     const initialPos = getSavedPosition();
     applyPosition(initialPos.x, initialPos.y);
@@ -316,4 +375,5 @@
   }
 
   startCycle();
+  startHelperTimer();
 })();
