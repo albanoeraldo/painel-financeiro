@@ -13,6 +13,7 @@ if (cloud) saveState(cloud);
 // Estado e mês
 let ym = getSelectedMonth();
 const state = loadState();
+state.closedMonths = state.closedMonths && typeof state.closedMonths === "object" ? state.closedMonths : {};
 let month = ensureMonth(state, ym);
 
 // Normalização
@@ -45,14 +46,93 @@ const extraValueErr   = document.getElementById("incomeExtraValueError");
 const addExtraBtn = document.getElementById("addIncomeExtra");
 const extraTbody = document.querySelector("#incomeExtraTable tbody");
 
+// Fechamento do mês
+const closeMonthBtn = document.getElementById("closeMonthBtn");
+const reopenMonthBtn = document.getElementById("reopenMonthBtn");
+const monthClosedBox = document.getElementById("monthClosedBox");
+const monthClosedSummary = document.getElementById("monthClosedSummary");
+
+const appConfirmModal = document.getElementById("appConfirmModal");
+const appConfirmTitle = document.getElementById("appConfirmTitle");
+const appConfirmText = document.getElementById("appConfirmText");
+const appConfirmOk = document.getElementById("appConfirmOk");
+const appConfirmCancel = document.getElementById("appConfirmCancel");
+
 // validator
 const v = createValidator({ showOn: "submit" });
 
+function openConfirmModal({
+  title = "Confirmar ação",
+  message = "Tem certeza?",
+  confirmText = "Confirmar",
+  cancelText = "Cancelar"
+} = {}) {
+  return new Promise((resolve) => {
+    if (!appConfirmModal || !appConfirmTitle || !appConfirmText || !appConfirmOk || !appConfirmCancel) {
+      resolve(false);
+      return;
+    }
+
+    appConfirmTitle.textContent = title;
+    appConfirmText.textContent = message;
+    appConfirmOk.textContent = confirmText;
+    appConfirmCancel.textContent = cancelText;
+
+    appConfirmModal.classList.add("is-open");
+    appConfirmModal.setAttribute("aria-hidden", "false");
+
+    function close(result) {
+      appConfirmModal.classList.remove("is-open");
+      appConfirmModal.setAttribute("aria-hidden", "true");
+
+      appConfirmOk.removeEventListener("click", onOk);
+      appConfirmCancel.removeEventListener("click", onCancel);
+      appConfirmModal.removeEventListener("click", onBackdrop);
+      document.removeEventListener("keydown", onKeyDown);
+
+      resolve(result);
+    }
+
+    function onOk() {
+      close(true);
+    }
+
+    function onCancel() {
+      close(false);
+    }
+
+    function onBackdrop(e) {
+      if (e.target.hasAttribute("data-close-modal")) {
+        close(false);
+      }
+    }
+
+    function onKeyDown(e) {
+      if (e.key === "Escape") close(false);
+      if (e.key === "Enter") close(true);
+    }
+
+    appConfirmOk.addEventListener("click", onOk);
+    appConfirmCancel.addEventListener("click", onCancel);
+    appConfirmModal.addEventListener("click", onBackdrop);
+    document.addEventListener("keydown", onKeyDown);
+  });
+}
+
 // helpers
 function sum(arr){ return (arr || []).reduce((a,b)=> a + Number(b || 0), 0); }
+
 function clearErr(input, errEl){
   if (input) input.classList.remove("invalid");
   if (errEl) errEl.textContent = "";
+}
+
+function formatDateTimeBR(iso){
+  try{
+    return new Date(iso).toLocaleString("pt-BR");
+  }catch{
+    return "-";
+  }
 }
 
 // Categorias (para o Dashboard)
@@ -116,9 +196,7 @@ function fixedTotals(m){
 }
 
 function totalsByCategoryFixed(m){
-  // soma por categoria (todas as fixas)
   const mapTotal = {};
-  // soma por categoria (somente pendentes)
   const mapPending = {};
 
   (m.fixed || []).forEach(it=>{
@@ -133,8 +211,8 @@ function totalsByCategoryFixed(m){
 }
 
 function totalsByCategoryExpenses(m){
-  const mapTotal = {}; 
-  const mapPending = {}; 
+  const mapTotal = {};
+  const mapPending = {};
 
   // FIXAS (pendentes) por categoria
   (m.fixed || []).forEach(it=>{
@@ -147,7 +225,7 @@ function totalsByCategoryExpenses(m){
     }
   });
 
-  // CARTÃO - PARCELAS (sempre entram no mês)
+  // CARTÃO - PARCELAS
   (m.card || []).forEach(it=>{
     const key = normalizeCategoryKey(it.category || "outros");
     const val = Number(it.monthValue || 0);
@@ -183,9 +261,13 @@ function calcTotals(m){
   // Falta pagar muda conforme você marca "pago?"
   const despesasPendentes = fixedPending + card + goals;
 
-  // Saldo NÃO muda ao pagar fixas (usa o plano do mês)
+  // Saldo planejado do mês
   const despesasPlanejadas = fixedTotal + card + goals;
   const saldo = income - despesasPlanejadas;
+
+  // Saldo para fechamento real do mês
+  const despesasRealizadas = fixedPaid + card + goals;
+  const saldoFechamento = income - despesasRealizadas;
 
   return {
     fixedTotal,
@@ -196,18 +278,125 @@ function calcTotals(m){
     incomeBase,
     incomeExtra,
     income,
-    despesasPendentes,      
-    despesasPlanejadas,     
-    saldo                   
+    despesasPendentes,
+    despesasPlanejadas,
+    despesasRealizadas,
+    saldo,
+    saldoFechamento
   };
 }
 
-// Renders
+/* =========================
+   FECHAMENTO DO MÊS
+========================= */
+function getMonthClosure(selectedYm = ym){
+  return state.closedMonths?.[selectedYm] || null;
+}
+
+function renderMonthClosure(){
+  if(!monthClosedBox || !monthClosedSummary || !closeMonthBtn || !reopenMonthBtn) return;
+
+  const closure = getMonthClosure(ym);
+
+  if(!closure){
+    monthClosedBox.style.display = "none";
+    closeMonthBtn.style.display = "inline-flex";
+    reopenMonthBtn.style.display = "none";
+    return;
+  }
+
+  monthClosedBox.style.display = "block";
+  closeMonthBtn.style.display = "none";
+  reopenMonthBtn.style.display = "inline-flex";
+
+  const statusIsPositive = closure.saldoFinal >= 0;
+  const statusClass = statusIsPositive ? "ok" : "bad";
+  const statusText = statusIsPositive ? "✅ Fechado positivo" : "❌ Fechado negativo";
+  const saldoClass = statusIsPositive ? "positive" : "negative";
+
+  monthClosedSummary.innerHTML = `
+    <div class="month-close-meta">
+      <span class="badge ${statusClass}">${statusText}</span>
+      <span class="badge">📌 Mês: <b>${ymToLabel(closure.month)}</b></span>
+    </div>
+
+    <div class="closure-grid">
+      <div class="closure-item">
+        <div class="label">Renda do mês</div>
+        <div class="value">${formatBRL(closure.income)}</div>
+      </div>
+
+      <div class="closure-item">
+        <div class="label">Fixas</div>
+        <div class="value">${formatBRL(closure.fixedTotal)}</div>
+      </div>
+
+      <div class="closure-item">
+        <div class="label">Cartão</div>
+        <div class="value">${formatBRL(closure.card)}</div>
+      </div>
+
+      <div class="closure-item">
+        <div class="label">Metas</div>
+        <div class="value">${formatBRL(closure.goals)}</div>
+      </div>
+
+      <div class="closure-item">
+        <div class="label">Despesas do mês</div>
+        <div class="value">${formatBRL(closure.expensesClosed)}</div>
+      </div>
+
+      <div class="closure-item">
+        <div class="label">Resultado final</div>
+        <div class="value ${saldoClass}">${formatBRL(closure.saldoFinal)}</div>
+      </div>
+    </div>
+
+    <div class="month-close-date">
+      Fechado em: <b>${formatDateTimeBR(closure.closedAt)}</b>
+    </div>
+  `;
+}
+
+function closeCurrentMonth(){
+  const { income, fixedTotal, card, goals } = calcTotals(month);
+
+  const expensesClosed = fixedTotal + card + goals;
+  const saldoFinal = income - expensesClosed;
+
+  state.closedMonths[ym] = {
+    month: ym,
+    closedAt: new Date().toISOString(),
+    income,
+    fixedTotal,
+    card,
+    goals,
+    expensesClosed,
+    saldoFinal
+  };
+
+  saveState(state);
+  renderMonthClosure();
+}
+
+function reopenCurrentMonth(){
+  if(state.closedMonths?.[ym]){
+    delete state.closedMonths[ym];
+    saveState(state);
+  }
+  renderMonthClosure();
+}
+
+/* =========================
+   RENDERS
+========================= */
 function renderKpis(){
   const {
     fixedTotal, fixedPending, fixedPaid,
     card, goals, income, despesasPendentes, saldo
   } = calcTotals(month);
+
+  const closure = getMonthClosure(ym);
 
   const kpis = [
     { label:"Renda do mês", value: formatBRL(income) },
@@ -215,7 +404,11 @@ function renderKpis(){
     { label:"Cartão (parcelas + assinaturas)", value: formatBRL(card) },
     { label:"Metas (guardado no mês)", value: formatBRL(goals) },
     { label:"Falta pagar (mês)", value: formatBRL(despesasPendentes) },
-    { label:"Saldo (sobra/falta)", value: formatBRL(saldo), badge: saldo >= 0 ? "ok" : "bad" },
+    {
+      label: closure ? "Saldo planejado" : "Saldo (sobra/falta)",
+      value: formatBRL(saldo),
+      badge: saldo >= 0 ? "ok" : "bad"
+    },
   ];
 
   const kpiEl = document.querySelector("#kpis");
@@ -232,6 +425,12 @@ function renderKpis(){
         ${
           k.label === "Fixas (pendentes)"
             ? `<div class="helper" style="margin-top:10px;">Pagas: <b>${formatBRL(fixedPaid)}</b> • Total fixas: <b>${formatBRL(fixedTotal)}</b></div>`
+            : ``
+        }
+
+        ${
+          closure && k.label === "Saldo planejado"
+            ? `<div class="helper" style="margin-top:10px;">Mês fechado: <b>${formatBRL(closure.saldoFinal)}</b></div>`
             : ``
         }
       </div>
@@ -264,7 +463,6 @@ function ensureCategoriesCard(){
   let el = document.getElementById("categoriesSummary");
   if(el) return el;
 
-  // cria um card no final da container se não existir no HTML
   const container = document.querySelector(".container");
   if(!container) return null;
 
@@ -361,7 +559,6 @@ function renderMonthSummary(){
     `;
   }).join("");
 
-  // se existir um lugar pra mostrar uma observação do total das fixas, coloca
   const foot = document.querySelector("#monthBreakdownFoot");
   if(foot){
     foot.innerHTML = `Total fixas (incluindo pagas): <b>${formatBRL(fixedTotal)}</b>`;
@@ -372,6 +569,7 @@ function renderDashboard(){
   ym = getSelectedMonth();
   month = ensureMonth(state, ym);
   normalizeMonth(month);
+  state.closedMonths = state.closedMonths && typeof state.closedMonths === "object" ? state.closedMonths : {};
   saveState(state);
 
   if (monthLabelEl) monthLabelEl.textContent = ymToLabel(ym);
@@ -381,6 +579,7 @@ function renderDashboard(){
   renderExtras();
   renderMonthSummary();
   renderCategories();
+  renderMonthClosure();
 }
 
 // ---------- VALIDAÇÕES ----------
@@ -434,6 +633,34 @@ addExtraBtn?.addEventListener("click", ()=>{
   clearErr(extraValueInput, extraValueErr);
 
   renderDashboard();
+});
+
+// fechar mês
+closeMonthBtn?.addEventListener("click", async () => {
+  const confirmed = await openConfirmModal({
+    title: "Fechar mês",
+    message: `Deseja fechar ${ymToLabel(ym)}?\n\nIsso vai salvar uma foto final do mês com o resultado positivo ou negativo.`,
+    confirmText: "Fechar mês",
+    cancelText: "Cancelar"
+  });
+
+  if (!confirmed) return;
+
+  closeCurrentMonth();
+});
+
+// reabrir mês
+reopenMonthBtn?.addEventListener("click", async () => {
+  const confirmed = await openConfirmModal({
+    title: "Reabrir mês",
+    message: `Deseja reabrir ${ymToLabel(ym)}?\n\nO fechamento salvo será removido e você poderá fechar novamente depois.`,
+    confirmText: "Reabrir mês",
+    cancelText: "Cancelar"
+  });
+
+  if (!confirmed) return;
+
+  reopenCurrentMonth();
 });
 
 // UX

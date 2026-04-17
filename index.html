@@ -53,19 +53,29 @@
           <div class="brand brand--hero">
             <h1>Controle Financeiro Pessoal</h1>
 
-          <div class="brand-meta">
-            <small>Mensal com resumo anual • simples, leve e prático</small>
-            <span class="brand-badge">Dashboard</span>
-          </div>
+            <div class="brand-meta">
+              <small>Mensal com resumo anual • simples, leve e prático</small>
+              <span class="brand-badge">Dashboard</span>
+            </div>
 
             <span class="brand-line"></span>
           </div>
 
           <div class="actions">
             <select id="monthSelect"></select>
+            <button id="closeMonthBtn" class="primary">Fechar mês</button>
+            <button id="reopenMonthBtn" class="btn-danger" style="display:none;">Reabrir mês</button>
             <button id="exportCsv" class="blue">Exportar CSV</button>
           </div>
         </header>
+
+        <div class="card" id="monthClosedBox" style="display:none; margin-top:0;">
+          <h3 style="margin:0 0 10px;">Fechamento do mês</h3>
+          <div class="helper" style="margin-bottom:12px;">
+            Esse fechamento salva uma foto final do mês selecionado.
+          </div>
+          <div id="monthClosedSummary"></div>
+        </div>
 
         <div class="row">
           <div class="card">
@@ -169,6 +179,25 @@
   <div class="cat-helper-popup" id="catHelperPopup">
     <img src="assets/img/cat-face-calc.png" alt="Gatinho ajudando nas contas">
     <span id="catHelperText">Tá tudo bem por aí?</span>
+  </div>
+
+  <div class="app-modal" id="appConfirmModal" aria-hidden="true">
+  <div class="app-modal-backdrop" data-close-modal></div>
+
+  <div class="app-modal-card" role="dialog" aria-modal="true" aria-labelledby="appConfirmTitle">
+    <div class="app-modal-header">
+      <h3 id="appConfirmTitle">Confirmar ação</h3>
+    </div>
+
+      <div class="app-modal-body">
+        <p id="appConfirmText">Tem certeza?</p>
+      </div>
+
+      <div class="app-modal-actions">
+        <button type="button" class="btn-danger" id="appConfirmCancel">Cancelar</button>
+        <button type="button" class="primary" id="appConfirmOk">Confirmar</button>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="assets/js/dashboard.js"></script>
