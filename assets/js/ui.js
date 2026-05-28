@@ -1,29 +1,39 @@
-import { loadState, saveState, ensureMonth, ymToLabel } from "./storage.js";
-import { supabase } from "./supabaseClient.js";
+import {
+  loadState,
+  saveState,
+  ensureMonth,
+  ymToLabel,
+  LAST_MONTH_KEY,
+} from "./storage.js";
 
-/* ========================= Perfil local (nome + foto) ========================= */
+import { supabase } from "./supabaseClient.js";
+import { pullStateFromCloud } from "./cloudState.js";
+import { calcMonthTotals } from "./finance.js";
+
+/* =========================
+   Perfil local
+========================= */
 const PROFILE_KEY = "profile_v1";
 
-function getStoredProfile(userId){
-  try{
+function getStoredProfile(userId) {
+  try {
     const all = JSON.parse(localStorage.getItem(PROFILE_KEY) || "{}");
     return all[userId] || null;
-  }catch{
+  } catch {
     return null;
   }
 }
 
-function firstLetter(name){
-  const t = (name || "").trim();
-  return t ? t[0].toUpperCase() : "U";
+function firstLetter(name) {
+  const text = String(name || "").trim();
+  return text ? text[0].toUpperCase() : "U";
 }
 
-export async function renderUserName(){
-  // getUser() é ok, mas getSession costuma ser mais “estável” no fluxo
-  const { data: sess } = await supabase.auth.getSession();
-  const user = sess?.session?.user;
+export async function renderUserName() {
+  const { data } = await supabase.auth.getSession();
+  const user = data?.session?.user;
 
-  if(!user) return;
+  if (!user) return;
 
   const saved = getStoredProfile(user.id);
 
@@ -36,173 +46,260 @@ export async function renderUserName(){
   const photo = saved?.photo || null;
 
   const nameEl = document.getElementById("userName");
-  if(nameEl) nameEl.textContent = name;
+  if (nameEl) {
+    nameEl.textContent = name;
+  }
 
   const avatarEl = document.getElementById("userAvatar");
-  if(avatarEl){
-    if(photo){
-      avatarEl.innerHTML = `<img src="${photo}" alt="avatar" style="width:100%; height:100%; object-fit:cover; border-radius:999px;" />`;
-    }else{
-      // garante que não fica HTML antigo quando remover foto
+
+  if (avatarEl) {
+    avatarEl.innerHTML = "";
+
+    if (photo) {
+      const img = document.createElement("img");
+      img.src = photo;
+      img.alt = "avatar";
+      img.className = "avatar-img";
+      img.style.width = "100%";
+      img.style.height = "100%";
+      img.style.objectFit = "cover";
+      img.style.borderRadius = "999px";
+
+      avatarEl.appendChild(img);
+    } else {
       avatarEl.textContent = firstLetter(name);
     }
   }
 
   const badge = document.getElementById("userBadge");
-  if(badge) badge.style.display = "inline-flex";
+  if (badge) {
+    badge.style.display = "inline-flex";
+  }
 }
 
-/* ========================= Mês / Seleção ========================= */
-export function currentYm(){
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,"0");
-  return `${y}-${m}`;
+/* =========================
+   Mês
+========================= */
+export function currentYm() {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+
+  return `${year}-${month}`;
 }
 
-export function getSelectedMonth(){
-  const el = document.querySelector("#monthSelect");
-  const saved = localStorage.getItem("albano_financas_last_month");
-  return el?.value || saved || currentYm();
+function isYm(value) {
+  return /^\d{4}-\d{2}$/.test(String(value || ""));
 }
 
-/* ========================= AUTH helpers ========================= */
-export async function requireAuth(){
+export function getSelectedMonth() {
+  const select = document.querySelector("#monthSelect");
+  const saved = localStorage.getItem(LAST_MONTH_KEY);
+
+  return select?.value || saved || currentYm();
+}
+
+function buildMonthRange({ yearsBack = 2, yearsForward = 5 } = {}) {
+  const now = new Date();
+  const startYear = now.getFullYear() - yearsBack;
+  const endYear = now.getFullYear() + yearsForward;
+
+  const list = [];
+
+  for (let year = startYear; year <= endYear; year++) {
+    for (let month = 1; month <= 12; month++) {
+      list.push(`${year}-${String(month).padStart(2, "0")}`);
+    }
+  }
+
+  return list;
+}
+
+/* =========================
+   Auth
+========================= */
+export async function requireAuth() {
   const { data } = await supabase.auth.getSession();
   const session = data?.session;
 
-  if(!session){
+  if (!session) {
     window.location.href = "login.html";
     return null;
   }
 
-  // evita “copiar” state do usuário anterior no mesmo navegador
   const uid = session.user.id;
   const lastUid = localStorage.getItem("albano_financas_uid");
 
-  if(lastUid && lastUid !== uid){
+  if (lastUid && lastUid !== uid) {
     localStorage.removeItem("albano_financas_v1");
-    localStorage.removeItem("albano_financas_last_month");
+    localStorage.removeItem(LAST_MONTH_KEY);
   }
 
   localStorage.setItem("albano_financas_uid", uid);
+
   return session;
 }
 
-export async function signOut(){
+export async function signOut() {
   await supabase.auth.signOut();
 
-  // limpa state local para não vazar entre contas
   localStorage.removeItem("albano_financas_v1");
-  localStorage.removeItem("albano_financas_last_month");
+  localStorage.removeItem(LAST_MONTH_KEY);
   localStorage.removeItem("albano_financas_uid");
 
   window.location.href = "login.html";
 }
 
-/** Gera meses fixos (range) */
-function buildMonthRange({ startYear = 2026, endYear = 2030 } = {}){
-  const list = [];
-  for(let y = startYear; y <= endYear; y++){
-    for(let m = 1; m <= 12; m++){
-      list.push(`${y}-${String(m).padStart(2,"0")}`);
-    }
-  }
-  return list;
+export async function hydrateStateFromCloud() {
+  const cloud = await pullStateFromCloud();
+
+  if (!cloud) return false;
+
+  saveState(cloud, { sync: false });
+
+  return true;
 }
 
-export async function initHeader(active){
+/* =========================
+   Header / Navegação
+========================= */
+export async function initHeader(active, { syncCloud = true } = {}) {
   const session = await requireAuth();
-  if(!session) return;
 
-  // nav active
-  document.querySelectorAll(".nav a").forEach(a=>{
-    if(a.dataset.page === active) a.classList.add("active");
+  if (!session) return null;
+
+  if (syncCloud) {
+    await hydrateStateFromCloud();
+  }
+
+  document.querySelectorAll(".nav a, .sidebar-nav a").forEach((link) => {
+    link.classList.toggle("active", link.dataset.page === active);
   });
 
-  // botão sair
   const logoutBtn = document.getElementById("logoutBtn");
-  logoutBtn?.addEventListener("click", async ()=> {
+
+  logoutBtn?.addEventListener("click", async () => {
     logoutBtn.disabled = true;
     await signOut();
   });
 
   const monthSelect = document.querySelector("#monthSelect");
-  if(!monthSelect) return;
+
+  if (!monthSelect) return session;
 
   const state = loadState();
-  state.months = state.months || {};
-  const cur = currentYm();
+  const current = currentYm();
+  const savedMonth = localStorage.getItem(LAST_MONTH_KEY);
+  const last = isYm(savedMonth) ? savedMonth : current;
 
-  // se não existir nenhum mês ainda, cria o mês atual
-  if(Object.keys(state.months).length === 0){
-    ensureMonth(state, cur);
+  const existingMonths = Object.keys(state.months || {}).filter(isYm);
+
+  if (!existingMonths.length) {
+    ensureMonth(state, current);
     saveState(state);
   }
 
-  const range = buildMonthRange({ startYear: 2026, endYear: 2030 });
+  if (isYm(last) && !state.months[last]) {
+    ensureMonth(state, last);
+    saveState(state);
+  }
+
+  const range = Array.from(
+    new Set([
+      ...buildMonthRange(),
+      ...Object.keys(state.months || {}),
+      current,
+      last,
+    ].filter(isYm))
+  ).sort();
 
   monthSelect.innerHTML = range
-    .map(ym => `<option value="${ym}">${ymToLabel(ym)}</option>`)
+    .map((ym) => `<option value="${ym}">${ymToLabel(ym)}</option>`)
     .join("");
 
-  // manter último selecionado
-  const last = localStorage.getItem("albano_financas_last_month") || cur;
-  monthSelect.value = range.includes(last) ? last : cur;
+  monthSelect.value = range.includes(last) ? last : current;
 
-  monthSelect.addEventListener("change", ()=>{
-    localStorage.setItem("albano_financas_last_month", monthSelect.value);
+  monthSelect.addEventListener("change", () => {
+    const selected = monthSelect.value;
 
-    const st = loadState();
-    st.months = st.months || {};
-    ensureMonth(st, monthSelect.value);
-    saveState(st);
+    localStorage.setItem(LAST_MONTH_KEY, selected);
+
+    const nextState = loadState();
+    ensureMonth(nextState, selected);
+    saveState(nextState);
 
     window.location.reload();
   });
 
-  // export
-  document.querySelector("#exportCsv")?.addEventListener("click", ()=> exportCsv());
+  document.querySelector("#exportCsv")?.addEventListener("click", () => {
+    exportCsv();
+  });
+
+  return session;
 }
 
-/* ========================= Export CSV ========================= */
-function download(filename, content, mime){
-  const blob = new Blob([content], { type:mime });
-  _toggleDownload(blob, filename);
-}
-function _toggleDownload(blob, filename){
+/* =========================
+   Export CSV
+========================= */
+function download(filename, content, mime) {
+  const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+
   URL.revokeObjectURL(url);
 }
 
-function exportCsv(){
-  const state = loadState();
-  state.months = state.months || {};
-  const rows = [["Mes","Renda","Fixas","Cartao","Metas (guardado)","Saldo"]];
+function csvCell(value) {
+  const text = String(value ?? "");
 
-  Object.keys(state.months).sort().forEach(ym=>{
-    const m = state.months[ym] || {};
+  if (/[;"\n\r]/.test(text)) {
+    return `"${text.replaceAll('"', '""')}"`;
+  }
 
-    const rendaBase = Number(m.incomeBase || m.income || 0);
-    const rendaExtras = Array.isArray(m.incomeExtra)
-      ? m.incomeExtra.reduce((a,b)=> a + Number(b.value||0), 0)
-      : 0;
-    const renda = rendaBase + rendaExtras;
-
-    const fixed = sum((m.fixed || []).map(x=> x.value));
-    const card  = sum((m.card || []).map(x=> x.monthValue));
-    const goalsSaved = sum((m.goals || []).map(x=> x.saved));
-    const saldo = renda - fixed - card - goalsSaved;
-
-    rows.push([ym, renda, fixed, card, goalsSaved, saldo]);
-  });
-
-  const csv = rows.map(r=> r.join(";")).join("\n");
-  download("resumo-anual.csv", csv, "text/csv;charset=utf-8");
+  return text;
 }
 
-function sum(arr){ return (arr || []).reduce((a,b)=> a + Number(b||0), 0); }
+function exportCsv() {
+  const state = loadState();
+
+  const rows = [
+    [
+      "Mes",
+      "Renda",
+      "Fixas total",
+      "Fixas pendentes",
+      "Cartao",
+      "Metas",
+      "Despesas planejadas",
+      "Saldo planejado",
+      "Saldo realizado",
+    ],
+  ];
+
+  Object.keys(state.months || {})
+    .sort()
+    .forEach((ym) => {
+      const month = state.months[ym] || {};
+      const totals = calcMonthTotals(month);
+
+      rows.push([
+        ym,
+        totals.income,
+        totals.fixedTotal,
+        totals.fixedPending,
+        totals.card,
+        totals.goals,
+        totals.plannedExpenses,
+        totals.plannedBalance,
+        totals.realizedBalance,
+      ]);
+    });
+
+  const csv = `\ufeff${rows.map((row) => row.map(csvCell).join(";")).join("\n")}`;
+
+  download("resumo-financeiro.csv", csv, "text/csv;charset=utf-8");
+}

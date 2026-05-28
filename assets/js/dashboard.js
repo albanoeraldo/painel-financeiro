@@ -1,52 +1,66 @@
 import { initHeader, renderUserName, getSelectedMonth } from "./ui.js";
-import { loadState, saveState, ensureMonth, uid, formatBRL, ymToLabel } from "./storage.js";
-import { createValidator } from "./validate.js";
-import { pullStateFromCloud } from "./cloudState.js";
 
-await initHeader("dashboard");
+import {
+  loadState,
+  saveState,
+  ensureMonth,
+  uid,
+  formatBRL,
+  ymToLabel,
+  escapeHTML,
+  parseMoneyInput,
+} from "./storage.js";
+
+import { createValidator } from "./validate.js";
+
+import {
+  calcMonthTotals,
+  fixedTotals,
+  cardRecurringTotal,
+  totalsByCategoryExpenses,
+  catLabel,
+  buildClosureSnapshot,
+  formatDateTimeBR,
+} from "./finance.js";
+
+/* =========================
+   Boot
+========================= */
+await initHeader("dashboard", { syncCloud: true });
 await renderUserName();
 
-// Puxa do Supabase e grava no localStorage antes de usar state/month
-const cloud = await pullStateFromCloud();
-if (cloud) saveState(cloud);
-
-// Estado e mês
 let ym = getSelectedMonth();
 const state = loadState();
-state.closedMonths = state.closedMonths && typeof state.closedMonths === "object" ? state.closedMonths : {};
+
+state.closedMonths =
+  state.closedMonths && typeof state.closedMonths === "object"
+    ? state.closedMonths
+    : {};
+
+const monthAlreadyExists = !!state.months?.[ym];
 let month = ensureMonth(state, ym);
 
-// Normalização
-function normalizeMonth(m){
-  m.incomeBase  = Number(m.incomeBase || 0);
-  m.incomeExtra = Array.isArray(m.incomeExtra) ? m.incomeExtra : [];
-  m.fixed       = Array.isArray(m.fixed) ? m.fixed : [];
-  m.card        = Array.isArray(m.card) ? m.card : [];
-  m.cardRecurring = Array.isArray(m.cardRecurring) ? m.cardRecurring : [];
-  m.goals       = Array.isArray(m.goals) ? m.goals : [];
-  return m;
+if (!monthAlreadyExists) {
+  saveState(state);
 }
-normalizeMonth(month);
-saveState(state);
 
-// UI
+/* =========================
+   Elementos da tela
+========================= */
 const monthLabelEl = document.querySelector("#monthLabel");
-if (monthLabelEl) monthLabelEl.textContent = ymToLabel(ym);
 
-// elements
 const incomeBaseInput = document.getElementById("incomeBase");
-const incomeBaseErr   = document.getElementById("incomeBaseError");
+const incomeBaseErr = document.getElementById("incomeBaseError");
 const saveIncomeBaseBtn = document.getElementById("saveIncomeBase");
 const clearSalaryBtn = document.getElementById("clearSalary");
 
 const extraNameInput = document.getElementById("incomeExtraName");
-const extraNameErr   = document.getElementById("incomeExtraNameError");
+const extraNameErr = document.getElementById("incomeExtraNameError");
 const extraValueInput = document.getElementById("incomeExtraValue");
-const extraValueErr   = document.getElementById("incomeExtraValueError");
+const extraValueErr = document.getElementById("incomeExtraValueError");
 const addExtraBtn = document.getElementById("addIncomeExtra");
 const extraTbody = document.querySelector("#incomeExtraTable tbody");
 
-// Fechamento do mês
 const closeMonthBtn = document.getElementById("closeMonthBtn");
 const reopenMonthBtn = document.getElementById("reopenMonthBtn");
 const monthClosedBox = document.getElementById("monthClosedBox");
@@ -58,17 +72,25 @@ const appConfirmText = document.getElementById("appConfirmText");
 const appConfirmOk = document.getElementById("appConfirmOk");
 const appConfirmCancel = document.getElementById("appConfirmCancel");
 
-// validator
 const v = createValidator({ showOn: "submit" });
 
+/* =========================
+   Modal de confirmação
+========================= */
 function openConfirmModal({
   title = "Confirmar ação",
   message = "Tem certeza?",
   confirmText = "Confirmar",
-  cancelText = "Cancelar"
+  cancelText = "Cancelar",
 } = {}) {
   return new Promise((resolve) => {
-    if (!appConfirmModal || !appConfirmTitle || !appConfirmText || !appConfirmOk || !appConfirmCancel) {
+    if (
+      !appConfirmModal ||
+      !appConfirmTitle ||
+      !appConfirmText ||
+      !appConfirmOk ||
+      !appConfirmCancel
+    ) {
       resolve(false);
       return;
     }
@@ -101,15 +123,15 @@ function openConfirmModal({
       close(false);
     }
 
-    function onBackdrop(e) {
-      if (e.target.hasAttribute("data-close-modal")) {
+    function onBackdrop(event) {
+      if (event.target.hasAttribute("data-close-modal")) {
         close(false);
       }
     }
 
-    function onKeyDown(e) {
-      if (e.key === "Escape") close(false);
-      if (e.key === "Enter") close(true);
+    function onKeyDown(event) {
+      if (event.key === "Escape") close(false);
+      if (event.key === "Enter") close(true);
     }
 
     appConfirmOk.addEventListener("click", onOk);
@@ -119,200 +141,52 @@ function openConfirmModal({
   });
 }
 
-// helpers
-function sum(arr){ return (arr || []).reduce((a,b)=> a + Number(b || 0), 0); }
-
-function clearErr(input, errEl){
+/* =========================
+   Helpers de UI
+========================= */
+function clearErr(input, errEl) {
   if (input) input.classList.remove("invalid");
   if (errEl) errEl.textContent = "";
 }
 
-function formatDateTimeBR(iso){
-  try{
-    return new Date(iso).toLocaleString("pt-BR");
-  }catch{
-    return "-";
-  }
-}
-
-// Categorias (para o Dashboard)
-const CATEGORIES = [
-  { key: "moradia", label: "🏠 Moradia" },
-  { key: "alimentacao", label: "🍽️ Alimentação" },
-  { key: "transporte", label: "🚗 Transporte" },
-  { key: "saude", label: "🩺 Saúde" },
-  { key: "internet", label: "📶 Internet/Telefone" },
-  { key: "lazer", label: "🎉 Lazer" },
-  { key: "emprestimo", label: "💳 Empréstimo" },
-  { key: "outros", label: "📌 Outros" },
-];
-
-function catLabel(key){
-  const c = CATEGORIES.find(x => x.key === key);
-  return c ? c.label : "📌 Outros";
-}
-
-function normalizeCategoryKey(raw){
-  const s = String(raw || "").trim();
-  if(!s) return "outros";
-
-  if(CATEGORIES.some(c => c.key === s)) return s;
-
-  const clean = s
-    .replace(/^[^\p{L}\p{N}]*/gu, "")
-    .trim()
-    .toLowerCase();
-
-  const mapTextToKey = {
-    "moradia": "moradia",
-    "alimentação": "alimentacao",
-    "alimentacao": "alimentacao",
-    "transporte": "transporte",
-    "saúde": "saude",
-    "saude": "saude",
-    "internet/telefone": "internet",
-    "internet": "internet",
-    "lazer": "lazer",
-    "empréstimo": "emprestimo",
-    "emprestimo": "emprestimo",
-    "outros": "outros",
-  };
-
-  return mapTextToKey[clean] || "outros";
-}
-
-// total das assinaturas ativas do cartão
-function cardRecurringTotal(m){
-  return sum((m.cardRecurring || [])
-    .filter(x => x && x.active !== false)
-    .map(x => x.value));
-}
-
-function fixedTotals(m){
-  const fixedTotal = sum((m.fixed || []).map(x => x.value));
-  const fixedPending = sum((m.fixed || []).filter(x => !x.paid).map(x => x.value));
-  const fixedPaid = fixedTotal - fixedPending;
-  return { fixedTotal, fixedPending, fixedPaid };
-}
-
-function totalsByCategoryFixed(m){
-  const mapTotal = {};
-  const mapPending = {};
-
-  (m.fixed || []).forEach(it=>{
-    const key = normalizeCategoryKey(it.category || "outros");
-    const val = Number(it.value || 0);
-
-    mapTotal[key] = (mapTotal[key] || 0) + val;
-    if(!it.paid) mapPending[key] = (mapPending[key] || 0) + val;
-  });
-
-  return { mapTotal, mapPending };
-}
-
-function totalsByCategoryExpenses(m){
-  const mapTotal = {};
-  const mapPending = {};
-
-  // FIXAS (pendentes) por categoria
-  (m.fixed || []).forEach(it=>{
-    const key = normalizeCategoryKey(it.category || "outros");
-    const val = Number(it.value || 0);
-
-    if(!it.paid){
-      mapTotal[key] = (mapTotal[key] || 0) + val;
-      mapPending[key] = (mapPending[key] || 0) + val;
-    }
-  });
-
-  // CARTÃO - PARCELAS
-  (m.card || []).forEach(it=>{
-    const key = normalizeCategoryKey(it.category || "outros");
-    const val = Number(it.monthValue || 0);
-    mapTotal[key] = (mapTotal[key] || 0) + val;
-  });
-
-  // CARTÃO - ASSINATURAS ATIVAS
-  (m.cardRecurring || [])
-    .filter(x => x && x.active !== false)
-    .forEach(it=>{
-      const key = normalizeCategoryKey(it.category || "outros");
-      const val = Number(it.value || 0);
-      mapTotal[key] = (mapTotal[key] || 0) + val;
-    });
-
-  return { mapTotal, mapPending };
-}
-
-function calcTotals(m){
-  const { fixedTotal, fixedPending, fixedPaid } = fixedTotals(m);
-
-  // parcelas + assinaturas
-  const cardParts = sum((m.card || []).map(x => x.monthValue));
-  const cardRec   = cardRecurringTotal(m);
-  const card      = cardParts + cardRec;
-
-  const goals = sum((m.goals || []).map(x => x.saved));
-
-  const incomeBase  = Number(m.incomeBase || 0);
-  const incomeExtra = (m.incomeExtra || []).reduce((a,b)=> a + Number(b.value || 0), 0);
-  const income      = incomeBase + incomeExtra;
-
-  // Falta pagar muda conforme você marca "pago?"
-  const despesasPendentes = fixedPending + card + goals;
-
-  // Saldo planejado do mês
-  const despesasPlanejadas = fixedTotal + card + goals;
-  const saldo = income - despesasPlanejadas;
-
-  // Saldo para fechamento real do mês
-  const despesasRealizadas = fixedPaid + card + goals;
-  const saldoFechamento = income - despesasRealizadas;
-
-  return {
-    fixedTotal,
-    fixedPending,
-    fixedPaid,
-    card,
-    goals,
-    incomeBase,
-    incomeExtra,
-    income,
-    despesasPendentes,
-    despesasPlanejadas,
-    despesasRealizadas,
-    saldo,
-    saldoFechamento
-  };
-}
-
-/* =========================
-   FECHAMENTO DO MÊS
-========================= */
-function getMonthClosure(selectedYm = ym){
+function getMonthClosure(selectedYm = ym) {
   return state.closedMonths?.[selectedYm] || null;
 }
 
-function renderMonthClosure(){
-  if(!monthClosedBox || !monthClosedSummary || !closeMonthBtn || !reopenMonthBtn) return;
+/* =========================
+   Fechamento do mês
+========================= */
+function renderMonthClosure() {
+  if (!monthClosedBox || !monthClosedSummary || !closeMonthBtn || !reopenMonthBtn) {
+    return;
+  }
 
   const closure = getMonthClosure(ym);
 
-  if(!closure){
+  if (!closure) {
     monthClosedBox.style.display = "none";
     closeMonthBtn.style.display = "inline-flex";
     reopenMonthBtn.style.display = "none";
     return;
   }
 
-  monthClosedBox.style.display = "block";
-  closeMonthBtn.style.display = "none";
-  reopenMonthBtn.style.display = "inline-flex";
+  const plannedBalance = Number(closure.plannedBalance ?? closure.saldoFinal ?? 0);
+  const realizedBalance = Number(closure.realizedBalance ?? closure.saldoFinal ?? 0);
+  const plannedExpenses = Number(closure.plannedExpenses ?? closure.expensesClosed ?? 0);
+  const realizedExpenses = Number(closure.realizedExpenses ?? closure.expensesClosed ?? 0);
 
-  const statusIsPositive = closure.saldoFinal >= 0;
+  const fixedTotal = Number(closure.fixedTotal || 0);
+  const fixedPaid = Number(closure.fixedPaid || 0);
+  const fixedPending = Number(closure.fixedPending || Math.max(fixedTotal - fixedPaid, 0));
+
+  const statusIsPositive = plannedBalance >= 0;
   const statusClass = statusIsPositive ? "ok" : "bad";
   const statusText = statusIsPositive ? "✅ Fechado positivo" : "❌ Fechado negativo";
   const saldoClass = statusIsPositive ? "positive" : "negative";
+
+  monthClosedBox.style.display = "block";
+  closeMonthBtn.style.display = "none";
+  reopenMonthBtn.style.display = "inline-flex";
 
   monthClosedSummary.innerHTML = `
     <div class="month-close-meta">
@@ -327,8 +201,18 @@ function renderMonthClosure(){
       </div>
 
       <div class="closure-item">
-        <div class="label">Fixas</div>
-        <div class="value">${formatBRL(closure.fixedTotal)}</div>
+        <div class="label">Fixas total</div>
+        <div class="value">${formatBRL(fixedTotal)}</div>
+      </div>
+
+      <div class="closure-item">
+        <div class="label">Fixas pagas</div>
+        <div class="value">${formatBRL(fixedPaid)}</div>
+      </div>
+
+      <div class="closure-item">
+        <div class="label">Fixas pendentes</div>
+        <div class="value">${formatBRL(fixedPending)}</div>
       </div>
 
       <div class="closure-item">
@@ -342,13 +226,23 @@ function renderMonthClosure(){
       </div>
 
       <div class="closure-item">
-        <div class="label">Despesas do mês</div>
-        <div class="value">${formatBRL(closure.expensesClosed)}</div>
+        <div class="label">Despesas planejadas</div>
+        <div class="value">${formatBRL(plannedExpenses)}</div>
       </div>
 
       <div class="closure-item">
-        <div class="label">Resultado final</div>
-        <div class="value ${saldoClass}">${formatBRL(closure.saldoFinal)}</div>
+        <div class="label">Despesas realizadas</div>
+        <div class="value">${formatBRL(realizedExpenses)}</div>
+      </div>
+
+      <div class="closure-item">
+        <div class="label">Saldo planejado</div>
+        <div class="value ${saldoClass}">${formatBRL(plannedBalance)}</div>
+      </div>
+
+      <div class="closure-item">
+        <div class="label">Saldo realizado</div>
+        <div class="value ${realizedBalance >= 0 ? "positive" : "negative"}">${formatBRL(realizedBalance)}</div>
       </div>
     </div>
 
@@ -358,113 +252,156 @@ function renderMonthClosure(){
   `;
 }
 
-function closeCurrentMonth(){
-  const { income, fixedTotal, card, goals } = calcTotals(month);
-
-  const expensesClosed = fixedTotal + card + goals;
-  const saldoFinal = income - expensesClosed;
-
-  state.closedMonths[ym] = {
-    month: ym,
-    closedAt: new Date().toISOString(),
-    income,
-    fixedTotal,
-    card,
-    goals,
-    expensesClosed,
-    saldoFinal
-  };
+function closeCurrentMonth() {
+  state.closedMonths[ym] = buildClosureSnapshot(ym, month);
 
   saveState(state);
-  renderMonthClosure();
+  renderDashboard();
 }
 
-function reopenCurrentMonth(){
-  if(state.closedMonths?.[ym]){
+function reopenCurrentMonth() {
+  if (state.closedMonths?.[ym]) {
     delete state.closedMonths[ym];
     saveState(state);
   }
-  renderMonthClosure();
+
+  renderDashboard();
 }
 
 /* =========================
-   RENDERS
+   Renders
 ========================= */
-function renderKpis(){
-  const {
-    fixedTotal, fixedPending, fixedPaid,
-    card, goals, income, despesasPendentes, saldo
-  } = calcTotals(month);
-
+function renderKpis() {
+  const totals = calcMonthTotals(month);
   const closure = getMonthClosure(ym);
 
   const kpis = [
-    { label:"Renda do mês", value: formatBRL(income) },
-    { label:"Fixas (pendentes)", value: formatBRL(fixedPending) },
-    { label:"Cartão (parcelas + assinaturas)", value: formatBRL(card) },
-    { label:"Metas (guardado no mês)", value: formatBRL(goals) },
-    { label:"Falta pagar (mês)", value: formatBRL(despesasPendentes) },
     {
-      label: closure ? "Saldo planejado" : "Saldo (sobra/falta)",
-      value: formatBRL(saldo),
-      badge: saldo >= 0 ? "ok" : "bad"
+      label: "Renda do mês",
+      value: formatBRL(totals.income),
+    },
+    {
+      label: "Fixas pendentes",
+      value: formatBRL(totals.fixedPending),
+      helper: `Pagas: <b>${formatBRL(totals.fixedPaid)}</b> • Total fixas: <b>${formatBRL(totals.fixedTotal)}</b>`,
+    },
+    {
+      label: "Cartão",
+      value: formatBRL(totals.card),
+      helper: `Parcelas: <b>${formatBRL(totals.cardParts)}</b> • Assinaturas: <b>${formatBRL(totals.cardRecurring)}</b>`,
+    },
+    {
+      label: "Metas",
+      value: formatBRL(totals.goals),
+      helper: "Valor guardado no mês selecionado.",
+    },
+    {
+      label: "Falta pagar",
+      value: formatBRL(totals.pendingExpenses),
+      helper: "Fixas pendentes + cartão + metas.",
+    },
+    {
+      label: closure ? "Saldo planejado" : "Saldo",
+      value: formatBRL(totals.plannedBalance),
+      badge: totals.plannedBalance >= 0 ? "ok" : "bad",
+      helper: closure
+        ? `Fechamento salvo: <b>${formatBRL(closure.plannedBalance ?? closure.saldoFinal ?? 0)}</b>`
+        : "Renda - todas as despesas planejadas.",
+    },
+    {
+      label: "Saldo realizado",
+      value: formatBRL(totals.realizedBalance),
+      badge: totals.realizedBalance >= 0 ? "ok" : "bad",
+      helper: "Renda - despesas realmente pagas/realizadas.",
     },
   ];
 
   const kpiEl = document.querySelector("#kpis");
-  if(!kpiEl) return;
 
-  kpiEl.innerHTML = kpis.map(k=>{
-    const cls = k.badge ? `badge ${k.badge}` : "badge";
-    return `
-      <div class="card kpi">
-        <div class="label">${k.label}</div>
-        <div class="value">${k.value}</div>
-        ${k.badge ? `<div style="margin-top:10px;"><span class="${cls}">${k.badge==="ok" ? "✅ Positivo" : "❌ Negativo"}</span></div>` : ""}
+  if (!kpiEl) return;
 
-        ${
-          k.label === "Fixas (pendentes)"
-            ? `<div class="helper" style="margin-top:10px;">Pagas: <b>${formatBRL(fixedPaid)}</b> • Total fixas: <b>${formatBRL(fixedTotal)}</b></div>`
-            : ``
-        }
+  kpiEl.innerHTML = kpis
+    .map((kpi) => {
+      const badgeClass = kpi.badge ? `badge ${kpi.badge}` : "badge";
+      const badgeText = kpi.badge === "ok" ? "✅ Positivo" : "❌ Negativo";
 
-        ${
-          closure && k.label === "Saldo planejado"
-            ? `<div class="helper" style="margin-top:10px;">Mês fechado: <b>${formatBRL(closure.saldoFinal)}</b></div>`
-            : ``
-        }
-      </div>
-    `;
-  }).join("");
+      return `
+        <div class="card kpi">
+          <div class="label">${kpi.label}</div>
+          <div class="value">${kpi.value}</div>
+
+          ${
+            kpi.badge
+              ? `<div style="margin-top:10px;"><span class="${badgeClass}">${badgeText}</span></div>`
+              : ""
+          }
+
+          ${
+            kpi.helper
+              ? `<div class="helper" style="margin-top:10px;">${kpi.helper}</div>`
+              : ""
+          }
+        </div>
+      `;
+    })
+    .join("");
 }
 
-function renderExtras(){
-  if(!extraTbody) return;
+function renderExtras() {
+  if (!extraTbody) return;
 
-  extraTbody.innerHTML = (month.incomeExtra || []).map(item => `
-    <tr>
-      <td>${item.name}</td>
-      <td class="right">${formatBRL(item.value)}</td>
-      <td class="right"><button class="del-extra" data-id="${item.id}">Excluir</button></td>
-    </tr>
-  `).join("");
+  const extras = month.incomeExtra || [];
 
-  extraTbody.querySelectorAll(".del-extra").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
+  if (!extras.length) {
+    extraTbody.innerHTML = `
+      <tr>
+        <td colspan="3">
+          <div class="empty">
+            <div>
+              <div class="title">Nenhuma renda extra cadastrada</div>
+              <div class="desc">Adicione bônus, comissão, serviço extra ou outra entrada do mês.</div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  extraTbody.innerHTML = extras
+    .map(
+      (item) => `
+        <tr>
+          <td>${escapeHTML(item.name)}</td>
+          <td class="right">${formatBRL(item.value)}</td>
+          <td class="right">
+            <button class="del-extra" data-id="${escapeHTML(item.id)}">Excluir</button>
+          </td>
+        </tr>
+      `
+    )
+    .join("");
+
+  extraTbody.querySelectorAll(".del-extra").forEach((btn) => {
+    btn.addEventListener("click", () => {
       const id = btn.dataset.id;
-      month.incomeExtra = (month.incomeExtra || []).filter(x => x.id !== id);
+
+      month.incomeExtra = (month.incomeExtra || []).filter((item) => item.id !== id);
+
       saveState(state);
       renderDashboard();
     });
   });
 }
 
-function ensureCategoriesCard(){
+function ensureCategoriesCard() {
   let el = document.getElementById("categoriesSummary");
-  if(el) return el;
+
+  if (el) return el;
 
   const container = document.querySelector(".container");
-  if(!container) return null;
+
+  if (!container) return null;
 
   const card = document.createElement("div");
   card.className = "card";
@@ -472,108 +409,169 @@ function ensureCategoriesCard(){
     <h3 style="margin:0 0 10px;">Categorias do mês</h3>
     <div id="categoriesSummary"></div>
     <div class="helper" style="margin-top:8px;">
-      Dica: esse resumo usa categorias das <b>Fixas (pendentes)</b> + <b>Cartão</b>.
+      Dica: esse resumo usa categorias das <b>Fixas pendentes</b> + <b>Cartão</b>.
     </div>
   `;
+
   container.appendChild(card);
 
   return document.getElementById("categoriesSummary");
 }
 
-function renderCategories(){
+function renderCategories() {
   const el = ensureCategoriesCard();
-  if(!el) return;
+
+  if (!el) return;
 
   const { mapTotal, mapPending } = totalsByCategoryExpenses(month);
 
   const entries = Object.entries(mapTotal)
-    .map(([k, total]) => {
-      const pending = Number(mapPending[k] || 0);
-      return { k, total: Number(total || 0), pending };
-    })
-    .filter(x => x.total > 0)
-    .sort((a,b)=> b.total - a.total);
+    .map(([key, total]) => {
+      const pending = Number(mapPending[key] || 0);
 
-  if(!entries.length){
-    el.innerHTML = `<div class="empty"><div><div class="title">Sem dados por categoria</div><div class="desc">Adicione Fixas/Cartão com categoria para aparecer aqui.</div></div></div>`;
+      return {
+        key,
+        total: Number(total || 0),
+        pending,
+      };
+    })
+    .filter((item) => item.total > 0)
+    .sort((a, b) => b.total - a.total);
+
+  if (!entries.length) {
+    el.innerHTML = `
+      <div class="empty">
+        <div>
+          <div class="title">Sem dados por categoria</div>
+          <div class="desc">Adicione Fixas ou Cartão com categoria para aparecer aqui.</div>
+        </div>
+      </div>
+    `;
     return;
   }
 
-  const max = Math.max(...entries.map(x=> x.total));
+  const max = Math.max(...entries.map((item) => item.total));
 
-  el.innerHTML = entries.map(x=>{
-    const pct = max > 0 ? (x.total / max) * 100 : 0;
-    const pctPend = x.total > 0 ? (x.pending / x.total) * 100 : 0;
+  el.innerHTML = entries
+    .map((item) => {
+      const pct = max > 0 ? (item.total / max) * 100 : 0;
+      const pctPending = item.total > 0 ? (item.pending / item.total) * 100 : 0;
 
-    return `
-      <div style="margin:10px 0;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-          <div style="font-weight:600;">${catLabel(x.k)}</div>
-          <div class="right" style="white-space:nowrap;">
-            <b>${formatBRL(x.total)}</b>
-            ${x.pending > 0 ? `<span style="opacity:.7;"> • fixas pendente ${formatBRL(x.pending)}</span>` : ``}
+      return `
+        <div style="margin:10px 0;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <div style="font-weight:600;">${catLabel(item.key)}</div>
+
+            <div class="right" style="white-space:nowrap;">
+              <b>${formatBRL(item.total)}</b>
+              ${
+                item.pending > 0
+                  ? `<span style="opacity:.7;"> • fixas pendentes ${formatBRL(item.pending)}</span>`
+                  : ""
+              }
+            </div>
           </div>
-        </div>
 
-        <div style="height:10px; background:rgba(2,6,23,.08); border-radius:999px; overflow:hidden; margin-top:8px;">
-          <div style="width:${pct}%; height:100%; background:rgba(37,99,235,.85);"></div>
-        </div>
+          <div style="height:10px; background:rgba(2,6,23,.08); border-radius:999px; overflow:hidden; margin-top:8px;">
+            <div style="width:${pct}%; height:100%; background:rgba(37,99,235,.85);"></div>
+          </div>
 
-        ${
-          x.pending > 0
-            ? `<div class="helper" style="margin-top:6px;">Fixas pendente: ${pctPend.toFixed(0)}%</div>`
-            : ``
-        }
-      </div>
-    `;
-  }).join("");
+          ${
+            item.pending > 0
+              ? `<div class="helper" style="margin-top:6px;">Fixas pendentes: ${pctPending.toFixed(0)}%</div>`
+              : ""
+          }
+        </div>
+      `;
+    })
+    .join("");
 }
 
-function renderMonthSummary(){
+function renderMonthSummary() {
   const tbody = document.querySelector("#monthBreakdown tbody");
-  if(!tbody) return;
 
-  const { fixedTotal, fixedPending } = fixedTotals(month);
+  if (!tbody) return;
 
-  const cardParts = sum((month.card || []).map(x => x.monthValue));
-  const cardRec = cardRecurringTotal(month);
-  const card = cardParts + cardRec;
-
-  const goals = sum((month.goals || []).map(x => x.saved));
-  const totalDespesas = fixedPending + card + goals;
+  const totals = calcMonthTotals(month);
 
   const rows = [
-    { name:"Fixas (pendentes)", value: fixedPending },
-    { name:"Cartão", value: card },
-    { name:"Metas", value: goals },
+    {
+      name: "Fixas pendentes",
+      value: totals.fixedPending,
+    },
+    {
+      name: "Cartão",
+      value: totals.card,
+    },
+    {
+      name: "Metas",
+      value: totals.goals,
+    },
   ];
 
-  tbody.innerHTML = rows.map(r=>{
-    const pct = totalDespesas > 0 ? (r.value/totalDespesas)*100 : 0;
-    return `
-      <tr>
-        <td>${r.name}</td>
-        <td class="right">${formatBRL(r.value)}</td>
-        <td class="right">${pct ? pct.toFixed(1) + "%" : "-"}</td>
-      </tr>
-    `;
-  }).join("");
+  const totalExpenses = rows.reduce((total, row) => {
+    return total + Number(row.value || 0);
+  }, 0);
 
-  const foot = document.querySelector("#monthBreakdownFoot");
-  if(foot){
-    foot.innerHTML = `Total fixas (incluindo pagas): <b>${formatBRL(fixedTotal)}</b>`;
+  tbody.innerHTML = rows
+    .map((row) => {
+      const pct = totalExpenses > 0 ? (row.value / totalExpenses) * 100 : 0;
+
+      return `
+        <tr>
+          <td>${row.name}</td>
+          <td class="right">${formatBRL(row.value)}</td>
+          <td class="right">${pct ? `${pct.toFixed(1)}%` : "-"}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  let foot = document.querySelector("#monthBreakdownFoot");
+
+  if (!foot) {
+    const tableWrap = document.querySelector("#monthBreakdown")?.closest(".table-wrap");
+
+    if (tableWrap) {
+      foot = document.createElement("div");
+      foot.id = "monthBreakdownFoot";
+      foot.className = "helper";
+      foot.style.marginTop = "10px";
+      tableWrap.after(foot);
+    }
+  }
+
+  if (foot) {
+    foot.innerHTML = `
+      Total fixas: <b>${formatBRL(totals.fixedTotal)}</b> •
+      Fixas pagas: <b>${formatBRL(totals.fixedPaid)}</b> •
+      Assinaturas do cartão: <b>${formatBRL(cardRecurringTotal(month))}</b>
+    `;
   }
 }
 
-function renderDashboard(){
-  ym = getSelectedMonth();
-  month = ensureMonth(state, ym);
-  normalizeMonth(month);
-  state.closedMonths = state.closedMonths && typeof state.closedMonths === "object" ? state.closedMonths : {};
-  saveState(state);
+function renderDashboard() {
+  const selected = getSelectedMonth();
 
-  if (monthLabelEl) monthLabelEl.textContent = ymToLabel(ym);
-  if (incomeBaseInput) incomeBaseInput.value = month.incomeBase ? String(Number(month.incomeBase)) : "";
+  if (selected !== ym) {
+    ym = selected;
+  }
+
+  const existed = !!state.months?.[ym];
+
+  month = ensureMonth(state, ym);
+
+  if (!existed) {
+    saveState(state);
+  }
+
+  if (monthLabelEl) {
+    monthLabelEl.textContent = ymToLabel(ym);
+  }
+
+  if (incomeBaseInput) {
+    incomeBaseInput.value = month.incomeBase ? String(Number(month.incomeBase)) : "";
+  }
 
   renderKpis();
   renderExtras();
@@ -582,66 +580,102 @@ function renderDashboard(){
   renderMonthClosure();
 }
 
-// ---------- VALIDAÇÕES ----------
-function ruleSalaryOptional(){
-  const val = (incomeBaseInput?.value || "").trim();
-  if(!val){ clearErr(incomeBaseInput, incomeBaseErr); return true; }
-  return v.numberMin(incomeBaseInput, incomeBaseErr, 0.01, "Informe um salário maior que 0.");
+/* =========================
+   Validações
+========================= */
+function ruleSalaryOptional() {
+  const value = (incomeBaseInput?.value || "").trim();
+
+  if (!value) {
+    clearErr(incomeBaseInput, incomeBaseErr);
+    return true;
+  }
+
+  return v.numberMin(
+    incomeBaseInput,
+    incomeBaseErr,
+    0.01,
+    "Informe um salário maior que 0."
+  );
 }
 
-function ruleExtraName(){ return v.required(extraNameInput, extraNameErr, "Informe a descrição da entrada extra."); }
-function ruleExtraValue(){ return v.numberMin(extraValueInput, extraValueErr, 0.01, "Informe um valor maior que 0."); }
+function ruleExtraName() {
+  return v.required(
+    extraNameInput,
+    extraNameErr,
+    "Informe a descrição da entrada extra."
+  );
+}
 
-// salvar salário
-saveIncomeBaseBtn?.addEventListener("click", ()=>{
+function ruleExtraValue() {
+  return v.numberMin(
+    extraValueInput,
+    extraValueErr,
+    0.01,
+    "Informe um valor maior que 0."
+  );
+}
+
+/* =========================
+   Eventos
+========================= */
+saveIncomeBaseBtn?.addEventListener("click", () => {
   v.setShowMsg(true);
-  const ok = v.validateAll([ruleSalaryOptional]);
-  if(!ok) return;
 
-  month.incomeBase = Number(incomeBaseInput?.value || 0);
+  const ok = v.validateAll([ruleSalaryOptional]);
+
+  if (!ok) return;
+
+  month.incomeBase = parseMoneyInput(incomeBaseInput?.value);
+
   saveState(state);
   renderDashboard();
 });
 
-// remover salário
-clearSalaryBtn?.addEventListener("click", ()=>{
+clearSalaryBtn?.addEventListener("click", () => {
   month.incomeBase = 0;
+
   saveState(state);
 
-  if (incomeBaseInput) incomeBaseInput.value = "";
+  if (incomeBaseInput) {
+    incomeBaseInput.value = "";
+  }
+
   clearErr(incomeBaseInput, incomeBaseErr);
 
   renderDashboard();
 });
 
-// adicionar extra
-addExtraBtn?.addEventListener("click", ()=>{
+addExtraBtn?.addEventListener("click", () => {
   v.setShowMsg(true);
+
   const ok = v.validateAll([ruleExtraName, ruleExtraValue]);
-  if(!ok) return;
+
+  if (!ok) return;
 
   month.incomeExtra.push({
     id: uid(),
     name: extraNameInput.value.trim(),
-    value: Number(extraValueInput.value),
+    value: parseMoneyInput(extraValueInput.value),
   });
+
   saveState(state);
 
   extraNameInput.value = "";
   extraValueInput.value = "";
+
   clearErr(extraNameInput, extraNameErr);
   clearErr(extraValueInput, extraValueErr);
 
   renderDashboard();
 });
 
-// fechar mês
 closeMonthBtn?.addEventListener("click", async () => {
   const confirmed = await openConfirmModal({
     title: "Fechar mês",
-    message: `Deseja fechar ${ymToLabel(ym)}?\n\nIsso vai salvar uma foto final do mês com o resultado positivo ou negativo.`,
+    message: `Deseja fechar ${ymToLabel(ym)}?\n\nIsso vai salvar uma foto final do mês com saldo planejado, saldo realizado e despesas do período.`,
     confirmText: "Fechar mês",
-    cancelText: "Cancelar"
+    cancelText: "Cancelar",
   });
 
   if (!confirmed) return;
@@ -649,13 +683,12 @@ closeMonthBtn?.addEventListener("click", async () => {
   closeCurrentMonth();
 });
 
-// reabrir mês
 reopenMonthBtn?.addEventListener("click", async () => {
   const confirmed = await openConfirmModal({
     title: "Reabrir mês",
     message: `Deseja reabrir ${ymToLabel(ym)}?\n\nO fechamento salvo será removido e você poderá fechar novamente depois.`,
     confirmText: "Reabrir mês",
-    cancelText: "Cancelar"
+    cancelText: "Cancelar",
   });
 
   if (!confirmed) return;
@@ -663,10 +696,25 @@ reopenMonthBtn?.addEventListener("click", async () => {
   reopenCurrentMonth();
 });
 
-// UX
-incomeBaseInput?.addEventListener("input", ()=>{ if(incomeBaseInput.classList.contains("invalid")) ruleSalaryOptional(); });
-extraNameInput?.addEventListener("input", ()=>{ if(extraNameInput.classList.contains("invalid")) ruleExtraName(); });
-extraValueInput?.addEventListener("input", ()=>{ if(extraValueInput.classList.contains("invalid")) ruleExtraValue(); });
+incomeBaseInput?.addEventListener("input", () => {
+  if (incomeBaseInput.classList.contains("invalid")) {
+    ruleSalaryOptional();
+  }
+});
 
-// init
+extraNameInput?.addEventListener("input", () => {
+  if (extraNameInput.classList.contains("invalid")) {
+    ruleExtraName();
+  }
+});
+
+extraValueInput?.addEventListener("input", () => {
+  if (extraValueInput.classList.contains("invalid")) {
+    ruleExtraValue();
+  }
+});
+
+/* =========================
+   Init
+========================= */
 renderDashboard();

@@ -2,13 +2,25 @@ import { supabase } from "./supabaseClient.js";
 
 const TABLE = "finance_state";
 
+async function getCurrentUser() {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user) return null;
+
+  return user;
+}
+
 export async function pullStateFromCloud() {
-  const { data: { user }, error: userErr } = await supabase.auth.getUser();
-  if (userErr || !user) return null;
+  const user = await getCurrentUser();
+
+  if (!user) return null;
 
   const { data, error } = await supabase
     .from(TABLE)
-    .select("state")
+    .select("state, updated_at")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -21,8 +33,9 @@ export async function pullStateFromCloud() {
 }
 
 export async function pushStateToCloud(state) {
-  const { data: { user }, error: userErr } = await supabase.auth.getUser();
-  if (userErr || !user) return false;
+  const user = await getCurrentUser();
+
+  if (!user) return false;
 
   const payload = {
     user_id: user.id,
