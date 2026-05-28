@@ -99,10 +99,13 @@ export function getSelectedMonth() {
   return select?.value || saved || currentYm();
 }
 
-function buildMonthRange({ yearsBack = 2, yearsForward = 5 } = {}) {
+const MIN_YEAR = 2026;
+
+function buildMonthRange({ yearsForward = 5 } = {}) {
   const now = new Date();
-  const startYear = now.getFullYear() - yearsBack;
-  const endYear = now.getFullYear() + yearsForward;
+
+  const startYear = MIN_YEAR;
+  const endYear = Math.max(now.getFullYear() + yearsForward, MIN_YEAR + yearsForward);
 
   const list = [];
 
@@ -210,7 +213,7 @@ export async function initHeader(active, { syncCloud = true } = {}) {
       ...Object.keys(state.months || {}),
       current,
       last,
-    ].filter(isYm))
+    ].filter((ym) => isYm(ym) && Number(ym.slice(0, 4)) >= MIN_YEAR))
   ).sort();
 
   monthSelect.innerHTML = range
